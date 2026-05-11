@@ -1,6 +1,6 @@
 variables:
   CIMPL_SERVICE: "search"
-  CIMPL_TESTING_DIR: "testing/integration-tests"
+  CIMPL_TESTING_DIR: "testing"
   CIMPL_BUILD_PATH: "search-core-plus/cloudbuild/Dockerfile"
   DISABLE_INTEGRATION_TEST: true
 

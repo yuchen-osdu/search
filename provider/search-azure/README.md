@@ -121,13 +121,13 @@ After the service has started it should be accessible via a web browser by visit
 
 ```bash
 # build + install integration test core
-$ (cd testing/integration-tests/search-test-core/ && mvn clean install)
+$ (cd testing/search-test-core/ && mvn clean install)
 
 # build + run Azure integration tests.
 #
 # Note: this assumes that the environment variables for integration tests as outlined
 #       above are already exported in your environment.
-$ (cd testing/integration-tests/search-test-azure/ && mvn clean test)
+$ (cd testing/search-test-azure/ && mvn clean test)
 ```
 
 ## Debugging

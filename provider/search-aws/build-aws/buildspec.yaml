@@ -69,14 +69,14 @@ phases:
       - GIT_SECRETS_SCAN_RESULT=$(git secrets --scan 2> ${OUTPUT_DIR}/git_secrets.out.txt && echo OK || echo FAILED)
       - if [ "$GIT_SECRETS_SCAN_RESULT" = "FAILED" ]; then echo "Secrets detected!" && exit 1; fi
 
-      - cp devops/aws/aws_jwt_client.py testing/integration-tests/search-test-aws/build-aws/aws_jwt_client.py
-      - cp devops/aws/requirements.txt testing/integration-tests/search-test-aws/build-aws/requirements.txt
+      - cp devops/aws/aws_jwt_client.py testing/search-test-aws/build-aws/aws_jwt_client.py
+      - cp devops/aws/requirements.txt testing/search-test-aws/build-aws/requirements.txt
 
       - echo "Building primary service assemblies..."
       - mvn -ntp -B test install -pl .,search-core,provider/search-aws -P aws,core -Ddeployment.environment=prod
       - mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -pl .,provider/search-aws -P aws -Dsonar.login=${SONAR_USERNAME} -Dsonar.password=${SONAR_PASSWORD} -Dsonar.branch.name=${BRANCH_NAME} -Dsonar.host.url=${SONAR_URL}
       - echo "Building integration testing assemblies and gathering artifacts..."
-      - ./testing/integration-tests/search-test-aws/build-aws/prepare-dist.sh
+      - ./testing/search-test-aws/build-aws/prepare-dist.sh
 
       - echo "Build and push docker image..."
       - docker buildx create --driver docker-container --use
@@ -94,7 +94,7 @@ phases:
     commands:
       - mkdir -p ${OUTPUT_DIR}/acceptance-tests
       - cp -r search-acceptance-test/* ${OUTPUT_DIR}/acceptance-tests
-      - cp testing/integration-tests/search-test-aws/build-aws/run-acceptance-tests.sh ${OUTPUT_DIR}/acceptance-tests
+      - cp testing/search-test-aws/build-aws/run-acceptance-tests.sh ${OUTPUT_DIR}/acceptance-tests
 
 
 reports:

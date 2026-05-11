@@ -74,7 +74,7 @@ stages:
       serviceName: ${{ variables.serviceName }}
       chartPath: ${{ variables.chartPath }}
       valuesFile: ${{ variables.valuesFile }}
-      testCoreMavenPomFile: "testing/integration-tests/search-test-core/pom.xml"
+      testCoreMavenPomFile: "testing/search-test-core/pom.xml"
       testCoreMavenOptions: ""
       skipDeploy: ${{ variables.SKIP_DEPLOY }}
       skipTest: ${{ variables.SKIP_TESTS }}

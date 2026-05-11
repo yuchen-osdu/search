@@ -177,7 +177,7 @@ Execute following command to build code and run all the integration tests:
 ```bash
 # Note: this assumes that the environment variables for integration tests as outlined
 #       above are already exported in your environment.
-$ (cd testing/integration-tests/search-test-gc/ && mvn clean test)
+$ (cd testing/search-test-gc/ && mvn clean test)
 ```
 
 ## License

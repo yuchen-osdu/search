@@ -56,12 +56,12 @@ stages:
         provider/search-gc/scripts/deploy.sh
         provider/search-integration-tests.zip
       serviceBase: ${{ variables.serviceName }}
-      testingRootFolder: "testing/integration-tests"
+      testingRootFolder: "testing"
   - template: devops/service-pipelines/deploy-stages.yml@infrastructure-templates
     parameters:
       serviceName: ${{ variables.serviceName }}
-      testCoreMavenPomFile: "integration-tests/search-test-core/pom.xml"
-      testCoreMavenOptions: "--settings $(System.DefaultWorkingDirectory)/drop/deploy/integration-tests/maven/settings.xml -DVSTS_FEED_TOKEN=$(VSTS_FEED_TOKEN)"
+      testCoreMavenPomFile: "search-test-core/pom.xml"
+      testCoreMavenOptions: "--settings $(System.DefaultWorkingDirectory)/drop/deploy/maven/settings.xml -DVSTS_FEED_TOKEN=$(VSTS_FEED_TOKEN)"
       providers:
         - name: Azure
           # Merges into Master
