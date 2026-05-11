@@ -41,7 +41,6 @@ hs_err_pid*
 
 target/
 bin/
-load-tests/*.pyc
 # Eclipse
 .classpath
 .project

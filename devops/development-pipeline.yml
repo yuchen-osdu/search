@@ -56,8 +56,8 @@ stages:
   - template: devops/service-pipelines/deploy-stages.yml@osdu-infrastructure
     parameters:
       serviceName: ${{ variables.serviceName }}
-      testCoreMavenPomFile: 'testing/integration-tests/search-test-core/pom.xml'
-      testCoreMavenOptions: '--settings $(System.DefaultWorkingDirectory)/drop/deploy/testing/integration-tests/maven/settings.xml'
+      testCoreMavenPomFile: 'testing/search-test-core/pom.xml'
+      testCoreMavenOptions: '--settings $(System.DefaultWorkingDirectory)/drop/deploy/testing/maven/settings.xml'
       providers:
         -  name: Azure
            environments: ['test']

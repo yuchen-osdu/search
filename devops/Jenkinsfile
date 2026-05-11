@@ -75,7 +75,7 @@ spec:
           }  
             steps {
                script {
-                  sh 'mvn -f testing/integration-tests/search-test-ibm/pom.xml test'
+                  sh 'mvn -f testing/search-test-ibm/pom.xml test'
                }
             }
        }

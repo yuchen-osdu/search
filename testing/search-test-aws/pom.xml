@@ -33,10 +33,23 @@
         <maven.compiler.source>17</maven.compiler.source>
         <cucumber.version>1.2.6</cucumber.version>
         <jackson.version>2.21.2</jackson.version>
+        <spring-boot.version>3.5.13</spring-boot.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Spring Boot BOM: required so httpclient5 (and other Spring Boot-managed deps) align with Spring Boot 3.5.x
+                 when this module is built standalone from the pre-packaged AWS artifact (not via the full Maven reactor).
+                 Without this, os-core-lib-aws's pinned httpclient5:5.2.1 wins on the classpath and Spring Boot 3.5.x's
+                 HttpComponentsHttpClientBuilder fails with NoClassDefFoundError on org.apache.hc.client5.http.ssl.TlsSocketStrategy
+                 (added in httpclient5 5.4.0). -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <!-- Jackson override: Spring Boot 3.5.7, 3.5.8, 3.5.9 and other artifacts provides 2.19.4, we need 2.21.1 for GHSA-72hv-8253-57qq -->
             <!-- Maybe remove this override when Spring Boot BOM updates to Jackson >= 2.21.1 -->
             <dependency>
