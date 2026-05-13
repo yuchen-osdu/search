@@ -65,3 +65,8 @@ dist/
 
 # GitHub Copilot
 .github/copilot-instructions.md
+
+# Schemathesis
+schemathesis-tests/output/
+__pycache__
+.DS_Store
