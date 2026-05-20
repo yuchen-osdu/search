@@ -15,3 +15,10 @@ cimpl-dev2-acceptance-test:
   variables:
     DEFAULT_DATA_PARTITION_ID_TENANT2: non-exist
     CUCUMBER_OPTIONS: "--plugin io.qameta.allure.cucumberjvm.AllureCucumberJvm --tags @default,@health,@SpatialLongitudeStandardRange"
+
+#standby (Blue-Green) jobs
+
+cimpl-standby-acceptance-test:
+  variables:
+    DEFAULT_DATA_PARTITION_ID_TENANT2: non-exist
+    CUCUMBER_OPTIONS: "--plugin io.qameta.allure.cucumberjvm.AllureCucumberJvm --tags @default,@health,@SpatialLongitudeStandardRange"
