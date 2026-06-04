@@ -74,7 +74,6 @@ include:
     file: "cloud-providers/gc-one-pipeline.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: "schemathesis_template"
     file: "reporting/schemathesis.yml"
 
   - local: "devops/gc/pipeline/override-stages.yml"
