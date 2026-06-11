@@ -14,41 +14,42 @@
 
 package org.opengroup.osdu.models.schema;
 
-import org.opengroup.osdu.common.TestsBase;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.opengroup.osdu.common.BaseSearchSteps;
+import org.opengroup.osdu.core.test.client.SchemaClient;
+import org.opengroup.osdu.core.test.client.model.schema.SchemaIdentity;
+import org.opengroup.osdu.core.test.client.model.schema.SchemaModel;
 import org.opengroup.osdu.models.TestIndex;
-import org.opengroup.osdu.util.FileHandler;
-import org.opengroup.osdu.util.HTTPClient;
-import org.opengroup.osdu.util.SchemaServiceClient;
+import org.opengroup.osdu.core.test.util.TestFileUtil;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-
+@Slf4j
+@Getter
 public class PersistentSchemaTestIndex extends TestIndex {
 
-    private static final Logger LOGGER = Logger.getLogger(PersistentSchemaTestIndex.class.getName());
-    private final SchemaServiceClient schemaServiceClient;
-    private final TestsBase testsBase;
+    private final SchemaClient schemaClient;
+    private final BaseSearchSteps baseSearchSteps;
     private SchemaModel schemaModel;
 
-    public PersistentSchemaTestIndex(HTTPClient client, TestsBase testsBase) {
+    public PersistentSchemaTestIndex(SchemaClient schemaClient, BaseSearchSteps baseSearchSteps) {
         super();
-        this.schemaServiceClient = new SchemaServiceClient(client);
-        this.testsBase = testsBase;
+        this.schemaClient = schemaClient;
+        this.baseSearchSteps = baseSearchSteps;
     }
 
     @Override
     public void setupSchema() {
         this.schemaModel = readSchemaFromJson();
         SchemaIdentity schemaIdentity = schemaModel.getSchemaInfo().getSchemaIdentity();
-        LOGGER.log(Level.INFO, "Read the schema={0}", schemaIdentity);
-        schemaIdentity.setAuthority(testsBase.generateActualNameWithoutTs(schemaIdentity.getAuthority()));
-        schemaIdentity.setSource(testsBase.generateActualName(schemaIdentity.getSource(),""));
-        LOGGER.log(Level.INFO, "Updated the schema={0}", schemaIdentity);
-        schemaServiceClient.createIfNotExist(schemaModel);
-        LOGGER.log(Level.INFO, "Finished setting up the schema={0}", schemaIdentity);
+        log.debug("Read the schema={}", schemaIdentity);
+        schemaIdentity.setAuthority(baseSearchSteps.generateActualNameWithoutTs(schemaIdentity.getAuthority()));
+        schemaIdentity.setSource(baseSearchSteps.generateActualName(schemaIdentity.getSource()));
+        log.debug("Updated the schema={}", schemaIdentity);
+        schemaClient.createIfNotExist(schemaModel);
+        log.debug("Finished setting up the schema={}", schemaIdentity);
     }
 
     @Override
@@ -59,16 +60,12 @@ public class PersistentSchemaTestIndex extends TestIndex {
         // If a developer updates the schema manually, the developer is supposed to update its version as well
     }
 
-    private SchemaModel readSchemaFromJson(){
+    private SchemaModel readSchemaFromJson() {
         try {
-            return FileHandler.readFile(getSchemaFile(), SchemaModel.class);
+            return TestFileUtil.readTestDataFile(getSchemaFile(), SchemaModel.class);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-    }
-
-    public SchemaModel getSchemaModel() {
-        return schemaModel;
     }
 
     @Override

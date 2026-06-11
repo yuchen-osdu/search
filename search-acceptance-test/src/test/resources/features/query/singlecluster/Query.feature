@@ -347,7 +347,7 @@ Feature: Search with different queries
     And I set autocomplete phrase to <autocomplete_phrase>
     And I send request to tenant <tenant>
     Then I should get in response <count> records with <returned_fields>
-    And I should get following autocomplete suggesstions <suggestions>
+    And I should get following autocomplete suggestions <suggestions>
 
     Examples:
       | tenant    | kind                                                     | query                                | limit | offset | returned_fields | count | autocomplete_phrase | suggestions     |
