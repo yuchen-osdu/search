@@ -1,6 +1,6 @@
 aws-acceptance-test:
   variables:
-    CUCUMBER_OPTIONS: "--plugin io.qameta.allure.cucumberjvm.AllureCucumberJvm --tags @default,@health,@SpatialLongitudeExtendedRange"
+    CUCUMBER_OPTIONS: "@default or @health or @SpatialLongitudeExtendedRange"
     GROUP_ID: $DOMAIN
   script:
     - >
