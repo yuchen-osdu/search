@@ -22,14 +22,6 @@ public class Config {
             DEFAULT_SEARCH_INDEX_WAIT_INTERVAL_SECONDS);
     }
 
-    public static String getOtherRelevantDataCountries() {
-        return EnvLoader.get("OTHER_RELEVANT_DATA_COUNTRIES");
-    }
-
-    public static String getLegalTag() {
-        return EnvLoader.get("LEGAL_TAG");
-    }
-
     public static String getDataPartitionIdTenant1() {
         return EnvLoader.getDataPartitionId();
     }

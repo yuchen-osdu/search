@@ -17,10 +17,13 @@ import org.opengroup.osdu.core.test.auth.UserType;
 import org.opengroup.osdu.core.test.client.ClientException;
 import org.opengroup.osdu.core.test.client.HttpResponse;
 import org.opengroup.osdu.core.test.client.RetryConfiguration;
+import org.opengroup.osdu.core.test.client.LegalTagsClient;
 import org.opengroup.osdu.core.test.client.SchemaClient;
 import org.opengroup.osdu.core.test.client.SearchClient;
 import org.opengroup.osdu.core.test.client.StorageClient;
 import org.opengroup.osdu.core.test.client.TidyTestClientRegistry;
+import org.opengroup.osdu.core.test.client.model.legal.LegalTag;
+import org.opengroup.osdu.core.test.client.model.legal.LegalTagProperties;
 import org.opengroup.osdu.core.test.client.model.OpenApiSpec;
 import org.opengroup.osdu.core.test.client.model.storage.CreateRecordsResponse;
 import org.opengroup.osdu.core.test.client.model.storage.RecordAcl;
@@ -39,7 +42,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -48,8 +50,6 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.opengroup.osdu.util.Config.getEntitlementsDomain;
-import static org.opengroup.osdu.util.Config.getLegalTag;
-import static org.opengroup.osdu.util.Config.getOtherRelevantDataCountries;
 import static org.opengroup.osdu.core.test.util.ResponseUtil.fromJson;
 import static org.opengroup.osdu.core.test.util.ResponseUtil.toJson;
 import static org.opengroup.osdu.util.Utility.beautifyJsonString;
@@ -57,11 +57,13 @@ import static org.opengroup.osdu.util.Utility.beautifyJsonString;
 @Slf4j
 public class BaseSearchSteps {
     private static final Gson GSON = new Gson();
+    private static final String OTHER_RELEVANT_DATA_COUNTRY = "US";
     private static final List<ServiceType> SERVICE_TYPES = List.of(
         ServiceType.SCHEMA_V1,
         ServiceType.SEARCH_V2,
         ServiceType.STORAGE_V2,
-        ServiceType.INDEXER_V2);
+        ServiceType.INDEXER_V2,
+        ServiceType.LEGAL_V1);
     private static final List<UserType> USER_TYPES = List.of(UserType.PRIVILEGED_USER);
     private static final TestInitializer TEST_INITIALIZER = TestInitializer.getSharedTestInitializer(
         USER_TYPES, SERVICE_TYPES, RetryConfiguration.none());
@@ -74,6 +76,8 @@ public class BaseSearchSteps {
     private static final StorageClient SHARED_STORAGE_CLIENT;
     private static final SchemaClient SHARED_SCHEMA_CLIENT;
     private static final SearchClient SHARED_SEARCH_CLIENT;
+    private static final LegalTagsClient SHARED_LEGAL_TAGS_CLIENT;
+    private static String suiteLegalTagName;
 
     static {
         SHARED_STORAGE_CLIENT = new StorageClient(
@@ -83,6 +87,9 @@ public class BaseSearchSteps {
             TEST_INITIALIZER.getStringHttpClient(),
             UserType.PRIVILEGED_USER);
         SHARED_SEARCH_CLIENT = new SearchClient(
+            TEST_INITIALIZER.getStringHttpClient(),
+            UserType.PRIVILEGED_USER);
+        SHARED_LEGAL_TAGS_CLIENT = new LegalTagsClient(
             TEST_INITIALIZER.getStringHttpClient(),
             UserType.PRIVILEGED_USER);
     }
@@ -103,6 +110,38 @@ public class BaseSearchSteps {
         SearchTestConfig.updateEntitlementsDomainFromGroupId();
         this.scenario = scenario;
         headers = new HashMap<>();
+    }
+
+    public static void setupSuiteLegalTag() {
+        suiteLegalTagName = Config.getDataPartitionIdTenant1() + "-search-" + System.currentTimeMillis();
+        LegalTagProperties properties = new LegalTagProperties(
+            "A1234",
+            "Default",
+            List.of(OTHER_RELEVANT_DATA_COUNTRY),
+            "Public",
+            "EAR99",
+            "No Personal Data",
+            "2099-01-25",
+            "Public Domain Data");
+        LegalTag legalTag = new LegalTag(
+            null,
+            true,
+            suiteLegalTagName,
+            properties,
+            "Legal tag for search acceptance tests");
+        HttpResponse<LegalTag> response = SHARED_LEGAL_TAGS_CLIENT.create(legalTag);
+        assertEquals(HttpStatus.SC_CREATED, response.statusCode(),
+            () -> "Failed to create legal tag " + suiteLegalTagName);
+        log.info("Created legal tag '{}' for acceptance test suite", suiteLegalTagName);
+    }
+
+    public static void tearDownSuiteLegalTag() {
+        if (suiteLegalTagName == null) {
+            return;
+        }
+        SHARED_LEGAL_TAGS_CLIENT.teardown();
+        log.info("Deleted legal tag '{}' after acceptance test suite", suiteLegalTagName);
+        suiteLegalTagName = null;
     }
 
     public static void tearDownTrackedResources() {
@@ -363,13 +402,12 @@ public class BaseSearchSteps {
     }
 
     protected Legal generateLegalTag() {
+        if (suiteLegalTagName == null) {
+            throw new IllegalStateException("Suite legal tag has not been created");
+        }
         Legal legal = new Legal();
-        Set<String> legalTags = new HashSet<>();
-        legalTags.add(getLegalTag());
-        legal.setLegaltags(legalTags);
-        Set<String> otherRelevantCountries = new HashSet<>();
-        otherRelevantCountries.add(getOtherRelevantDataCountries());
-        legal.setOtherRelevantDataCountries(otherRelevantCountries);
+        legal.setLegaltags(Set.of(suiteLegalTagName));
+        legal.setOtherRelevantDataCountries(Set.of(OTHER_RELEVANT_DATA_COUNTRY));
         return legal;
     }
 

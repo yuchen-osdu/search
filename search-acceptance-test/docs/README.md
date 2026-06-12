@@ -13,8 +13,8 @@ Export the variables below (or place them in a `.env` file loaded by `os-core-te
 | `DEFAULT_DATA_PARTITION_ID_TENANT2` | eg `non-exist`                                                             | Non-existing tenant for negative tests               | no         | yes      |
 | `ENTITLEMENTS_DOMAIN`               | eg `group`                                                                 | Domain name for entitlements service                 | no         | yes      |
 | `GROUP_ID`                          | eg `group`                                                                 | Group ID used in test data and ACLs                  | no         | yes      |
-| `LEGAL_TAG`                         | eg `osdu-demo-legaltag`                                                    | Legal tag for ingested records                       | no         | yes      |
-| `OTHER_RELEVANT_DATA_COUNTRIES`     | eg `US`                                                                    | Other relevant data countries for legal tag          | no         | yes      |
+
+Legal tags for record ingestion are created automatically before each Cucumber suite and deleted afterward (country of origin: `US`). No `LEGAL_TAG` or `OTHER_RELEVANT_DATA_COUNTRIES` configuration is required.
 
 Authentication via OIDC:
 
