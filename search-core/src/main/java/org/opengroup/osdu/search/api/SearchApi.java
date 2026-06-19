@@ -130,7 +130,7 @@ public class SearchApi {
     @DeleteMapping("/query_with_cursor/{cursor}")
     @PreAuthorize("@authorizationFilter.hasPermission('" + SearchServiceRole.ADMIN + "', '" + SearchServiceRole.USER + "')")
     @ResponseStatus(HttpStatus.OK)
-    public void closeCursor(@Parameter(description = "Cursor value returned by a previous query_with_cursor response.") @NotNull @PathVariable(value = "cursor") String cursor,
+    public void closeCursor(@Parameter(description = "Cursor value returned by a previous query_with_cursor response.", schema = @Schema(type = "string", pattern = "^[A-Za-z0-9=_-]+$")) @NotNull @PathVariable(value = "cursor") String cursor,
                             @Parameter(description = "If true, close a search-after pagination context instead of a scroll context.") @RequestParam(value="search_after", required = false, defaultValue = "false") boolean search_after) throws Exception {
         if(searchAfterFeatureManager.isEnabled() || search_after) {
             searchAfterQueryService.close(cursor);

@@ -23,27 +23,31 @@
     <packaging>pom</packaging>
 
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
+        <java.version>17</java.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <skip.unit.tests>false</skip.unit.tests>
         <skip.integration.tests>true</skip.integration.tests>
-        <jackson.version>2.21.2</jackson.version>
         <resteasy-jaxrs.version>4.0.0.Beta5</resteasy-jaxrs.version>
         <resteasy-jackson2.version>6.2.9.Final</resteasy-jackson2.version>
         <snakeyaml.version>2.0</snakeyaml.version>
-        <commons-codec.version>1.14</commons-codec.version>
         <woodstox-core.version>5.3.0</woodstox-core.version>
         <reactor-bom.version>2023.0.6</reactor-bom.version>
         <google-oauth-client.version>1.34.1</google-oauth-client.version>
         <commons-compress.version>1.21</commons-compress.version>
-        <osdu.oscorecommon.version>6.0.0</osdu.oscorecommon.version>
-        <spring-framework-version>6.2.17</spring-framework-version>
-        <spring-security.version>6.5.9</spring-security.version>
+        <os-core-common.version>7.1.0</os-core-common.version>
+        <!-- os-core-common 7.0.0 declares lettuce-core as provided; CVE-2025-58057 requires >= 7.5.2.RELEASE -->
+        <lettuce.version>7.5.2.RELEASE</lettuce.version>
+        <!-- lettuce-core 7.x requires Netty 4.2+; Spring Boot 3.5.14 provides 4.1.x -->
+        <netty.version>4.2.14.Final</netty.version>
+        <spring-framework.version>6.2.18</spring-framework.version>
+        <spring-security.version>6.5.10</spring-security.version>
         <openapi.version>2.8.16</openapi.version>
         <swagger-core.version>2.2.45</swagger-core.version>
         <json-smart.version>2.6.0</json-smart.version>
         <mockito-core.version>5.12.0</mockito-core.version>
         <mockito-inline.version>5.2.0</mockito-inline.version>
-        <spring-boot.version>3.5.13</spring-boot.version>
+        <spring-boot.version>3.5.14</spring-boot.version>
         <lombok.version>1.18.42</lombok.version>
     </properties>
 
@@ -57,6 +61,19 @@
 
     <dependencyManagement>
         <dependencies>
+            <!--
+                netty-bom must be imported BEFORE spring-boot-dependencies: Maven gives
+                precedence to the first BOM declared, so this is how we override Spring
+                Boot 3.5.x's transitive Netty 4.1.x with the 4.2.x line that lettuce-core
+                7.5.2 requires (CVE-2025-58057 et al).
+            -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -65,16 +82,16 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-framework-bom</artifactId>
-                <version>${spring-framework-version}</version>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-bom</artifactId>
+                <version>${spring-security.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-bom</artifactId>
-                <version>${spring-security.version}</version>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-framework-bom</artifactId>
+                <version>${spring-framework.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -93,12 +110,11 @@
                 <artifactId>swagger-annotations-jakarta</artifactId>
                 <version>${swagger-core.version}</version>
             </dependency>
+            <!-- os-core-common jar version managed here so child modules need no explicit version -->
             <dependency>
                 <groupId>org.opengroup.osdu</groupId>
                 <artifactId>os-core-common</artifactId>
-                <version>${osdu.oscorecommon.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
+                <version>${os-core-common.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.javassist</groupId>
@@ -108,7 +124,6 @@
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>${commons-codec.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.yaml</groupId>
@@ -252,6 +267,16 @@
                 <artifactId>spring-boot-starter-web</artifactId>
                 <version>${spring-boot.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.lettuce</groupId>
+                <artifactId>lettuce-core</artifactId>
+                <version>${lettuce.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.13.2</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -259,6 +284,9 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <!--OpenApi -->
         <dependency>
@@ -290,6 +318,13 @@
             <url>${repo.releases.url}</url>
         </repository>
     </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>${repo.releases.id}</id>
+            <url>${repo.releases.url}</url>
+        </pluginRepository>
+    </pluginRepositories>
 
     <distributionManagement>
         <repository>
@@ -361,7 +396,9 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven-compiler-plugin.version}</version>
                     <configuration>
+                        <parameters>true</parameters>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>
@@ -387,6 +424,55 @@
             </plugins>
         </pluginManagement>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.6.2</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.opengroup.osdu</groupId>
+                        <artifactId>osdu-enforcer-rules</artifactId>
+                        <version>1.0.1</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>enforce-config-hygiene</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>[3.6.3,)</version>
+                                </requireMavenVersion>
+                                <requireJavaVersion>
+                                    <version>[17,)</version>
+                                </requireJavaVersion>
+                                <banDuplicatePomDependencyVersions/>
+                                <requireSameVersions>
+                                    <plugins>
+                                        <plugin>org.apache.maven.plugins:maven-compiler-plugin</plugin>
+                                    </plugins>
+                                </requireSameVersions>
+                            </rules>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>enforce-test-execution</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <enforceTestExecution/>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>io.github.git-commit-id</groupId>
                 <artifactId>git-commit-id-maven-plugin</artifactId>

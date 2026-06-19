@@ -14,8 +14,6 @@
 	<version>0.30.0-SNAPSHOT</version>
 
 	<properties>
-		<maven.compiler.target>17</maven.compiler.target>
-		<maven.compiler.source>17</maven.compiler.source>
 		<cucumber.version>1.2.5</cucumber.version>
 		<os-core-lib-ibm.version>0.27.0-rc2</os-core-lib-ibm.version>
 		<argLine>
@@ -84,7 +82,6 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>1.18.42</version>
 			<scope>provided</scope>
 		</dependency>
 

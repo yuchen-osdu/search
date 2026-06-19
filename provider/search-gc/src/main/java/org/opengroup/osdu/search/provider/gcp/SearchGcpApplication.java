@@ -17,12 +17,24 @@
 
 package org.opengroup.osdu.search.provider.gcp;
 
+import org.opengroup.osdu.core.common.crs.CrsConverterClientFactory;
+import org.opengroup.osdu.search.SearchApplication;
+import org.opengroup.osdu.search.SearchCorePlusApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.PropertySource;
 
-@ComponentScan(basePackages = {"org.opengroup.osdu"})
+//TODO Broad scanning of core-common should be reduced to only the beans that are actually required.
+@ComponentScan(
+    basePackages = {"org.opengroup.osdu"},
+    excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
+        CrsConverterClientFactory.class,
+        SearchCorePlusApplication.class,
+        SearchApplication.class
+    })
+)
 @SpringBootApplication(
     exclude = {
         org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,

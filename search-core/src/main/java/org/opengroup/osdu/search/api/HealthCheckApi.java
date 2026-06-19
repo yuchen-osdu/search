@@ -5,9 +5,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,7 +31,7 @@ public class HealthCheckApi {
         @ApiResponse(
             responseCode = "200",
             description = "OK",
-            content = {@Content(schema = @Schema(implementation = String.class))}),
+            content = {@Content(mediaType = MediaType.TEXT_PLAIN_VALUE, schema = @Schema(implementation = String.class))}),
         @ApiResponse(
             responseCode = "502",
             description = "Bad Gateway",
@@ -39,6 +41,9 @@ public class HealthCheckApi {
             description = "Service Unavailable",
             content = {@Content(schema = @Schema(implementation = AppError.class))})
       })
+  // Public endpoint: no authentication required (see @PermitAll). Empty @SecurityRequirements
+  // overrides the global bearer security so the generated spec advertises `security: []`.
+  @SecurityRequirements
   @PermitAll
   @GetMapping("/liveness_check")
   public ResponseEntity<String> livenessCheck() {
@@ -54,7 +59,7 @@ public class HealthCheckApi {
         @ApiResponse(
             responseCode = "200",
             description = "OK",
-            content = {@Content(schema = @Schema(implementation = String.class))}),
+            content = {@Content(mediaType = MediaType.TEXT_PLAIN_VALUE, schema = @Schema(implementation = String.class))}),
         @ApiResponse(
             responseCode = "502",
             description = "Bad Gateway",
@@ -64,6 +69,9 @@ public class HealthCheckApi {
             description = "Service Unavailable",
             content = {@Content(schema = @Schema(implementation = AppError.class))})
       })
+  // Public endpoint: no authentication required (see @PermitAll). Empty @SecurityRequirements
+  // overrides the global bearer security so the generated spec advertises `security: []`.
+  @SecurityRequirements
   @PermitAll
   @GetMapping("/readiness_check")
   public ResponseEntity<String> readinessCheck() {

@@ -30,7 +30,6 @@
   </parent>
 
   <properties>
-    <maven.compiler.release>17</maven.compiler.release>
     <maven.war.plugin>2.6</maven.war.plugin>
     <appengine.maven.plugin>1.0.0</appengine.maven.plugin>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -43,7 +42,6 @@
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>os-core-common</artifactId>
-      <version>${osdu.oscorecommon.version}</version>
     </dependency>
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
@@ -75,6 +73,14 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-loader</artifactId>
+    </dependency>
+    <!--
+      os-core-common declares lettuce-core as provided. core-plus is packaged
+      as a self-contained Spring Boot jar, so include Lettuce explicitly.
+    -->
+    <dependency>
+      <groupId>io.lettuce</groupId>
+      <artifactId>lettuce-core</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
