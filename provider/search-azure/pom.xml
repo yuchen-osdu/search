@@ -70,6 +70,15 @@
             <artifactId>core-lib-azure</artifactId>
             <version>${core-lib-azure.version}</version>
         </dependency>
+        <!--
+            os-core-common 7.0.0 declares lettuce-core as provided (not propagated).
+            core-lib-azure's IRedisClientFactory uses lettuce types; Mockito mocking
+            and runtime instantiation require lettuce-core on the classpath.
+        -->
+        <dependency>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+        </dependency>
 
         <!-- Spring Dependencies -->
         <dependency>
@@ -105,7 +114,6 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>${gson.version}</version>
         </dependency>
 
         <!-- Test Dependencies -->
