@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Configuration;
 public class SearchConfigurationProperties {
 	public static final String AUTOCOMPLETE_FEATURE_NAME = "featureFlag.autocomplete.enabled";
 	public static final String POLICY_FEATURE_NAME = "featureFlag.policy.enabled";
+	public static final String SEARCH_AFTER_FEATURE_NAME = "query-with-search-after";
 
 	//Search query properties
 	private Integer queryDefaultLimit = 10;

@@ -15,17 +15,18 @@
 
 package org.opengroup.osdu.search.util;
 
+import static org.opengroup.osdu.search.config.SearchConfigurationProperties.SEARCH_AFTER_FEATURE_NAME;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SearchAfterFeatureManager {
-    private static final String PROPERTY_NAME =  "query-with-search-after";
 
     @Autowired
     private BooleanFeatureFlagClient booleanFeatureFlagClient;
 
     public boolean isEnabled() {
-        return booleanFeatureFlagClient.isEnabled(PROPERTY_NAME, true);
+        return booleanFeatureFlagClient.isEnabled(SEARCH_AFTER_FEATURE_NAME, true);
     }
 }
