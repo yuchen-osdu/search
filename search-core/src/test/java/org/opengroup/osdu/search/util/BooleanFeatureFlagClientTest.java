@@ -26,6 +26,7 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.partition.*;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.opengroup.osdu.search.cache.FeatureFlagCache;
+import org.opengroup.osdu.search.cache.PartitionFeatureFlagCache;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -47,6 +48,7 @@ public class BooleanFeatureFlagClientTest {
 
     @Mock
     private FeatureFlagCache cache;
+    @Mock private PartitionFeatureFlagCache partitionFeatureFlagCache;
     @Mock private JaxRsDpsLog logger;
     @Mock private DpsHeaders headers;
     @Mock private IPartitionFactory factory;
@@ -64,6 +66,7 @@ public class BooleanFeatureFlagClientTest {
     void setUp() {
         lenient().when(headers.getPartitionId()).thenReturn(PARTITION);
         lenient().when(headers.getHeaders()).thenReturn(new HashMap<>());
+        lenient().when(partitionFeatureFlagCache.get(anyString(), anyString())).thenReturn(null);
     }
 
     @Test
@@ -75,6 +78,33 @@ public class BooleanFeatureFlagClientTest {
         assertTrue(result);
         verify(cache, never()).put(anyString(), any());
         verifyNoInteractions(factory, tokenService, partitionProvider);
+    }
+
+    @Test
+    void isEnabled_withPartitionId_returnsCachedValue_whenPresent() {
+        when(partitionFeatureFlagCache.get(FEATURE, PARTITION)).thenReturn(true);
+
+        boolean result = client.isEnabled(FEATURE, false, PARTITION);
+
+        assertTrue(result);
+        verifyNoInteractions(factory, tokenService, partitionProvider);
+    }
+
+    @Test
+    void isEnabled_withPartitionId_fetchesAndReturnsTrueFromPartitionProperties() throws Exception {
+        when(factory.create(any())).thenReturn(partitionProvider);
+        when(tokenService.getIdToken(PARTITION)).thenReturn("token");
+        when(partitionProvider.get(PARTITION)).thenReturn(partitionInfo);
+
+        Property prop = new Property(false, "true");
+        Map<String, Property> props = Map.of(FEATURE, prop);
+        when(partitionInfo.getProperties()).thenReturn(props);
+
+        boolean result = client.isEnabled(FEATURE, false, PARTITION);
+
+        assertTrue(result);
+        verify(partitionFeatureFlagCache).put(FEATURE, PARTITION, true);
+        verify(logger).info(contains("feature flag 'testFeature'"));
     }
 
     @Test

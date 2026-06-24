@@ -20,6 +20,7 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.partition.*;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.opengroup.osdu.search.cache.FeatureFlagCache;
+import org.opengroup.osdu.search.cache.PartitionFeatureFlagCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,9 @@ public class BooleanFeatureFlagClient {
     @Lazy
     @Autowired
     private FeatureFlagCache cache;
+
+    @Autowired
+    private PartitionFeatureFlagCache partitionFeatureFlagCache;
 
     @Autowired
     private JaxRsDpsLog logger;
@@ -44,19 +48,31 @@ public class BooleanFeatureFlagClient {
 
     public boolean isEnabled(String featureName, boolean defaultValue) {
         Boolean isEnabled = this.cache.get(featureName);
-        if (isEnabled != null)
+        if (isEnabled != null) {
             return isEnabled;
+        }
 
         String dataPartitionId = this.headers.getPartitionId();
+        isEnabled = isEnabled(featureName, defaultValue, dataPartitionId);
+        this.cache.put(featureName, isEnabled);
+        return isEnabled;
+    }
+
+    public boolean isEnabled(String featureName, boolean defaultValue, String dataPartitionId) {
+        Boolean cached = partitionFeatureFlagCache.get(featureName, dataPartitionId);
+        if (cached != null) {
+            return cached;
+        }
+
+        boolean isEnabled = defaultValue;
         try {
             PartitionInfo partitionInfo = getPartitionInfo(dataPartitionId);
             isEnabled = getFeatureValue(partitionInfo, featureName, defaultValue);
             this.logger.info(String.format("BooleanFeatureFlagClient: The feature flag '%s' in data partition '%s' is set to %s", featureName, dataPartitionId, isEnabled));
         } catch (Exception e) {
-            isEnabled = defaultValue;
             this.logger.error(String.format("BooleanFeatureFlagClient: Error on getting the feature flag '%s' for data partition '%s'. Using default value %s.", featureName, dataPartitionId, isEnabled), e);
         }
-        this.cache.put(featureName, isEnabled);
+        partitionFeatureFlagCache.put(featureName, dataPartitionId, isEnabled);
         return isEnabled;
     }
 
@@ -66,8 +82,7 @@ public class BooleanFeatureFlagClient {
             partitionHeaders.put(DpsHeaders.AUTHORIZATION, this.tokenService.getIdToken(dataPartitionId));
 
             IPartitionProvider partitionProvider = this.factory.create(partitionHeaders);
-            PartitionInfo partitionInfo = partitionProvider.get(dataPartitionId);
-            return partitionInfo;
+            return partitionProvider.get(dataPartitionId);
         } catch (PartitionException e) {
             if (e.getResponse() != null) {
                 this.logger.error(String.format("Error getting partition info for data-partition: %s. Message: %s. ResponseCode: %s.", dataPartitionId, e.getResponse().getBody(), e.getResponse().getResponseCode()), e);
