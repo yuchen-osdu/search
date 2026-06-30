@@ -28,6 +28,10 @@ unsupported_method.enabled = false
 # firewall-rejected input) that the service does not contractually own; documented success
 # responses are still correct.
 content_type_conformance.enabled = false
+# OpenAPI cannot express all server-side constraints (e.g. SpatialFilter allows only one
+# criterion); schema-valid bodies may still be rejected with 400.
+[checks.positive_data_acceptance]
+expected-statuses = ["2xx", "400", "401", "403", "404", "409", "5xx"]
 
 [phases.stateful]
 enabled = false
