@@ -768,7 +768,6 @@ cc-pd
 ========================================================================
 The following software have components provided under the terms of this license:
 
-- Netty/Codec (from http://netty.io/, https://repo1.maven.org/maven2/io/netty/netty-codec)
 - Netty/Codec/Base (from https://netty.io/)
 
 ========================================================================
