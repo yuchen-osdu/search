@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.validation.ValidationException;
 import javassist.NotFoundException;
 import org.apache.http.HttpStatus;
-import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +35,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.web.firewall.RequestRejectedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -133,6 +133,15 @@ public class GlobalExceptionMapperTest {
         ValidationException exception = new ValidationException();
 
         ResponseEntity<Object> response = sut.handleValidationException(exception);
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode().value());
+    }
+
+    @Test
+    public void should_useBadRequestInResponse_When_handleRequestRejectedExceptionIsHandledByGlobalExceptionMapper() {
+        RequestRejectedException exception = new RequestRejectedException(
+                "The request was rejected because the header has a value that is not allowed.");
+
+        ResponseEntity<Object> response = sut.handleRequestRejectedException(exception);
         assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode().value());
     }
 
