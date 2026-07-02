@@ -38,8 +38,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.firewall.RequestRejectedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -181,6 +183,27 @@ public class GlobalExceptionMapperTest {
 
         AppException apException = new AppException(HttpStatus.SC_BAD_REQUEST, "Too many clauses", loggingMsg);
         verify(this.log).warning(eq(loggingMsg), any(AppException.class));
+    }
+
+    @Test
+    public void should_returnBadRequest_whenHandlerMethodValidationFails() {
+        HandlerMethodValidationException exception = mock(HandlerMethodValidationException.class);
+        ParameterValidationResult validationResult = mock(ParameterValidationResult.class);
+        FieldError fieldError = new FieldError("searchApi", "cursor", "must not be null");
+
+        when(exception.getAllValidationResults()).thenReturn(List.of(validationResult));
+        when(validationResult.getResolvableErrors()).thenReturn(List.of(fieldError));
+
+        ResponseEntity<Object> response = sut.handleHandlerMethodValidationException(
+                exception, new HttpHeaders(), HttpStatusCode.valueOf(400), mock(WebRequest.class));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode().value());
+        assertInstanceOf(ObjectNode.class, response.getBody());
+        ObjectNode body = (ObjectNode) response.getBody();
+        assertEquals(400, body.get("code").asInt());
+        assertEquals("Bad Request", body.get("reason").asText());
+        assertTrue(body.has("errors"));
     }
 
     @Test

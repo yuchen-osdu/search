@@ -249,4 +249,19 @@ public class SearchApiTest {
         }
     }
 
+    @Test
+    public void should_returnEmptyCursorQueryResponse_whenCursorClosed() throws Exception {
+        when(this.searchAfterFeatureManager.isEnabled()).thenReturn(true);
+
+        ResponseEntity<CursorQueryResponse> response = this.sut.closeCursor("098F6BCD4621D373CADE4E832627B4F", false);
+
+        verify(this.searchAfterQueryService, times(1)).close("098F6BCD4621D373CADE4E832627B4F");
+        assertEquals(HttpServletResponse.SC_OK, response.getStatusCodeValue());
+        CursorQueryResponse apiResponse = response.getBody();
+        assertNotNull(apiResponse);
+        assertNull(apiResponse.getCursor());
+        assertTrue(apiResponse.getResults().isEmpty());
+        assertEquals(0, apiResponse.getTotalCount());
+    }
+
 }

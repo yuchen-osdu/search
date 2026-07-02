@@ -271,7 +271,10 @@ paths:
         required: true
         schema:
           type: string
-          pattern: "^[A-Za-z0-9=_-]+$"
+          pattern: "^[0-9A-F]{32}$"
+          minLength: 32
+          maxLength: 32
+          example: 098F6BCD4621D373CADE4E832627B4F
       - name: search_after
         in: query
         description: "If true, close a search-after pagination context instead of\
@@ -492,6 +495,11 @@ components:
           type: string
           description: Search context to retrieve the next page of results. Null when
             there are no more results.
+          pattern: "^[0-9A-F]{32}$"
+          minLength: 32
+          maxLength: 32
+          example: 098F6BCD4621D373CADE4E832627B4F
+          nullable: true
       required:
       - kind
     Point:
@@ -593,7 +601,11 @@ components:
           type: string
           description: Search context to retrieve the next page of results. Null when
             there are no more results.
-          example: AoE=
+          pattern: "^[0-9A-F]{32}$"
+          minLength: 32
+          maxLength: 32
+          example: 098F6BCD4621D373CADE4E832627B4F
+          nullable: true
         results:
           type: array
           description: "List of matched records, each represented as a map of field\

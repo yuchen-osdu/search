@@ -29,6 +29,7 @@ import org.opengroup.osdu.core.common.model.search.CursorQueryResponse;
 import org.opengroup.osdu.core.common.model.search.QueryRequest;
 import org.opengroup.osdu.core.common.model.search.QueryResponse;
 import org.opengroup.osdu.core.common.model.search.SearchServiceRole;
+import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.search.provider.interfaces.ISearchAfterQueryService;
 import org.opengroup.osdu.search.provider.interfaces.IQueryService;
 import org.opengroup.osdu.search.provider.interfaces.IScrollQueryService;
@@ -43,13 +44,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 @RestController
 @RequestScope
@@ -73,7 +74,7 @@ public class SearchApi {
             security = {@SecurityRequirement(name = "Authorization")}, tags = { "search-api" })
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Success", content = { @Content(schema = @Schema(implementation = QueryResponse.class)) }),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters were given on request",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters were given on request", content = {@Content(schema = @Schema(implementation = AppError.class))}),
             @ApiResponse(responseCode = "401", description = "Unauthorized",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
             @ApiResponse(responseCode = "403", description = "User not authorized to perform the action",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
             @ApiResponse(responseCode = "404", description = "Not Found",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
@@ -92,7 +93,7 @@ public class SearchApi {
             security = {@SecurityRequirement(name = "Authorization")}, tags = { "search-api" })
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Success", content = { @Content(schema = @Schema(implementation = CursorQueryResponse.class)) }),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters were given on request",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters were given on request", content = {@Content(schema = @Schema(implementation = AppError.class))}),
             @ApiResponse(responseCode = "401", description = "Unauthorized",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
             @ApiResponse(responseCode = "403", description = "User not authorized to perform the action",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
             @ApiResponse(responseCode = "404", description = "Not Found",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
@@ -119,7 +120,7 @@ public class SearchApi {
             security = {@SecurityRequirement(name = "Authorization")}, tags = { "search-api" })
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Success", content = { @Content(schema = @Schema(implementation = CursorQueryResponse.class)) }),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters were given on request",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters were given on request", content = {@Content(schema = @Schema(implementation = AppError.class))}),
             @ApiResponse(responseCode = "401", description = "Unauthorized",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
             @ApiResponse(responseCode = "403", description = "User not authorized to perform the action",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
             @ApiResponse(responseCode = "404", description = "Not Found",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
@@ -129,11 +130,16 @@ public class SearchApi {
     })
     @DeleteMapping("/query_with_cursor/{cursor}")
     @PreAuthorize("@authorizationFilter.hasPermission('" + SearchServiceRole.ADMIN + "', '" + SearchServiceRole.USER + "')")
-    @ResponseStatus(HttpStatus.OK)
-    public void closeCursor(@Parameter(description = "Cursor value returned by a previous query_with_cursor response.", schema = @Schema(type = "string", pattern = "^[A-Za-z0-9=_-]+$")) @NotNull @PathVariable(value = "cursor") String cursor,
+    public ResponseEntity<CursorQueryResponse> closeCursor(
+            @Parameter(description = "Cursor value returned by a previous query_with_cursor response.",
+                    schema = @Schema(type = "string", pattern = ValidationDoc.CURSOR_PATTERN,
+                            minLength = ValidationDoc.CURSOR_LENGTH, maxLength = ValidationDoc.CURSOR_LENGTH,
+                            example = SwaggerDoc.CURSOR_EXAMPLE))
+            @Pattern(regexp = ValidationDoc.CURSOR_PATTERN) @NotNull @PathVariable(value = "cursor") String cursor,
                             @Parameter(description = "If true, close a search-after pagination context instead of a scroll context.") @RequestParam(value="search_after", required = false, defaultValue = "false") boolean search_after) throws Exception {
         if(searchAfterFeatureManager.isEnabled() || search_after) {
             searchAfterQueryService.close(cursor);
         }
+        return new ResponseEntity<>(CursorQueryResponse.getEmptyResponse(), HttpStatus.OK);
     }
 }

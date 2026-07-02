@@ -43,6 +43,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.beans.TypeMismatchException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import jakarta.validation.ValidationException;
@@ -71,6 +73,24 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleJsonProcessingException(JsonProcessingException e) {
         return this.getErrorResponse(
                 new AppException(HttpStatus.BAD_REQUEST.value(), "Invalid JSON format on the request", e.getMessage(), e));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(
+            TypeMismatchException e, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
+        return this.getErrorResponse(
+                new AppException(HttpStatus.BAD_REQUEST.value(), "Bad Request", "Invalid parameters were given on search request", e));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(
+            HandlerMethodValidationException e, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
+        List<String> errors = new ArrayList<>();
+        e.getAllValidationResults().forEach(result ->
+                result.getResolvableErrors().forEach(error -> errors.add(error.getDefaultMessage())));
+        this.jaxRsDpsLogger.warning("Invalid parameters were given on search request", e);
+        HttpStatus httpStatus = HttpStatus.resolve(org.apache.http.HttpStatus.SC_BAD_REQUEST);
+        return new ResponseEntity<>(this.getValidationResponse(errors), httpStatus);
     }
 
     // ResponseEntityExceptionHandler already has a default implementation for handling MethodArgumentNotValidException, so we are overriding it

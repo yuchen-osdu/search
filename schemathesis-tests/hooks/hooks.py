@@ -1,31 +1,92 @@
 """Schemathesis hooks for the search-service API-contract gate.
 
-Registered via the ``hooks="./hooks/hooks.py"`` key in ``schemathesis.toml``; the
-``@schemathesis.hook`` decorators below take effect on import.
+``blend_query_kind_and_spatial_bodies`` blends known-good ``kind`` / ``spatialFilter`` values
+into POST ``/query*`` generation (avoids ``filter_too_much`` on 4.22.4).
+
+``normalize_query_kind_and_cursor_case`` dedupes ``kind`` lists and drops body ``cursor`` on
+``POST /query_with_cursor`` (first-page only).
+
+``data-partition-id`` is pinned globally via ``[headers]`` in schemathesis-base (merged config).
+
+Loaded via ``hooks = "./hooks/hooks.py"`` in the merged config (from schemathesis-base).
 """
 
+from __future__ import annotations
+
+import hypothesis.strategies as st
 import schemathesis
 
+POST_QUERY_PATHS = frozenset({"/query", "/query_with_cursor"})
 
-@schemathesis.hook
-def map_case(context, case):
-    """Drop ``spatialFilter`` from generated request bodies.
+KIND_VALUES = ("osdu:osdu:wellbore:1.0.0", "opendes:osdu:wellbore:1.0.0")
+KIND_STRATEGY = st.one_of(
+    st.sampled_from(KIND_VALUES),
+    st.lists(st.sampled_from(KIND_VALUES), min_size=1, max_size=2, unique=True),
+)
 
-    The ``SpatialFilter`` model (os-core-common) declares ``field`` plus five optional
-    criteria — ``byBoundingBox``, ``byDistance``, ``byGeoPolygon``, ``byIntersection``,
-    ``byWithinPolygon`` — as independent optional properties, but the server enforces (via
-    ``SpatialFilterValidator``) that only one criterion may be set. The generated OpenAPI
-    schema does not express that mutual exclusivity, so the data generator produces bodies
-    with several criteria at once and the service correctly rejects them with HTTP 400,
-    tripping the ``positive_data_acceptance`` check.
+# One criterion per filter, aligned with SpatialFilterValidator.
+SPATIAL_FILTER_SAMPLES = (
+    {
+        "field": "data.Location",
+        "byBoundingBox": {
+            "topLeft": {"latitude": 45.0, "longitude": -100.0},
+            "bottomRight": {"latitude": 40.0, "longitude": -95.0},
+        },
+    },
+    {
+        "field": "data.Location",
+        "byDistance": {
+            "distance": 1500.0,
+            "point": {"latitude": 30.0, "longitude": -95.0},
+        },
+    },
+    {
+        "field": "data.Location",
+        "byGeoPolygon": {
+            "points": [
+                {"latitude": 30.0, "longitude": -95.0},
+                {"latitude": 31.0, "longitude": -94.0},
+                {"latitude": 32.0, "longitude": -93.0},
+            ],
+        },
+    },
+)
 
-    ``spatialFilter`` is optional, so removing it keeps every generated body schema-valid and
-    server-acceptable. This is a stopgap that excludes spatial filtering from contract
-    coverage. The real fix is to model the exclusivity in the schema upstream (a ``oneOf`` on
-    ``SpatialFilter`` in os-core-common, mirrored by the validator); once that lands, this hook
-    should be removed.
-    """
-    body = getattr(case, "body", None)
-    if isinstance(body, dict):
-        body.pop("spatialFilter", None)
+PREDEFINED_BODIES = st.one_of(
+    st.fixed_dictionaries({"kind": KIND_STRATEGY}),
+    st.fixed_dictionaries(
+        {
+            "kind": KIND_STRATEGY,
+            "spatialFilter": st.sampled_from(SPATIAL_FILTER_SAMPLES),
+        }
+    ),
+)
+
+
+@schemathesis.hook("before_generate_body")
+def blend_query_kind_and_spatial_bodies(context, strategy):
+    operation = context.operation
+    if (
+        operation is not None
+        and operation.method.upper() == "POST"
+        and operation.path in POST_QUERY_PATHS
+    ):
+        return st.one_of(strategy, PREDEFINED_BODIES)
+    return strategy
+
+
+@schemathesis.hook("map_case")
+def normalize_query_kind_and_cursor_case(context, case):
+    body = case.body
+    if not isinstance(body, dict):
+        return case
+
+    kind = body.get("kind")
+    if isinstance(kind, list):
+        deduped = list(dict.fromkeys(kind))
+        body["kind"] = deduped[0] if len(deduped) == 1 else deduped
+
+    if case.method.upper() == "POST" and case.path == "/query_with_cursor":
+        body.pop("cursor", None)
+
     return case

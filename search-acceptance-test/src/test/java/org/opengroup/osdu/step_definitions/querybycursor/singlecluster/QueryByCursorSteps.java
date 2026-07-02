@@ -35,11 +35,12 @@ import static org.opengroup.osdu.util.Utility.parseCommaSeparatedList;
 @SuppressWarnings("unused")
 public class QueryByCursorSteps extends BaseSearchSteps {
 
-    private final CursorQueryRequest requestQuery = new CursorQueryRequest();
+    private CursorQueryRequest requestQuery = new CursorQueryRequest();
 
     @Before
     public void before(Scenario scenario) {
         initScenario(scenario);
+        requestQuery = new CursorQueryRequest();
     }
 
     @Given("the schema is created with the following kind")
@@ -130,7 +131,8 @@ public class QueryByCursorSteps extends BaseSearchSteps {
 
     @When("^I set an invalid cursor$")
     public void i_set_an_invalid_cursor() {
-        requestQuery.setCursor("invalid cursor");
+        // Format-valid (32 uppercase hex chars) but not a real scroll/search-after cursor
+        requestQuery.setCursor("00000000000000000000000000000000");
     }
 
     @Then("^I should get in response (\\d+) records along with a cursor$")

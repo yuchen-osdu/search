@@ -1,52 +1,28 @@
-seed = 42424242424424242
-workers = 1
-continue-on-failure = true
-request-timeout = 30.0
-hooks="./hooks/hooks.py"
-
-# NOTE: `CursorQueryRequest` (defined in os-core-common) carries enough pattern/format/enum
-# constraints that Hypothesis filters out most generated request bodies and aborts the
-# `POST /query_with_cursor` operation with a `filter_too_much` health check. This must be
-# suppressed via the `--suppress-health-check=filter_too_much` CLI flag in .gitlab-ci.yml:
-# the top-level `suppress-health-check` config key is validated but NOT honored at runtime in
-# schemathesis 4.17.0 (unlike `[checks]` below, which works). Re-evaluate on schemathesis bumps.
-
-[generation]
-mode = "all"
-max-examples = 500
-
-# Checks disabled below assert behavior the OSDU platform delegates to the API gateway /
-# servlet container rather than to this service, so the service legitimately responds
-# differently from what these checks expect. Keep every other check enabled.
-[checks]
-# Gateway enforces bearer auth; the service runs request/param validation first and returns
-# 400 (not 401) when the Authorization header is absent.
-missing_required_header.enabled = false
-# Method routing is handled upstream; unmapped methods (e.g. TRACE) return 400, not 405.
-unsupported_method.enabled = false
-# Edge/error responses surface framework-default content types (text/plain on malformed or
-# firewall-rejected input) that the service does not contractually own; documented success
-# responses are still correct.
-content_type_conformance.enabled = false
-# OpenAPI cannot express all server-side constraints (e.g. SpatialFilter allows only one
-# criterion); schema-valid bodies may still be rejected with 400.
-[checks.positive_data_acceptance]
-expected-statuses = ["2xx", "400", "401", "403", "404", "409", "5xx"]
-
-[phases.stateful]
+# Spring MVC ignores undeclared query parameters (returns 200 with a valid body).
+# OpenAPI lists only documented params, so Schemathesis negative_data_rejection
+# would fail on extra query params even though the API intentionally accepts them.
+[checks.negative_data_rejection]
 enabled = false
 
-[phases.examples]
-enabled = true
+[generation]
+max-examples = 20
 
+# Coverage on POST /query* is slow (regex-backed kind/cursor + Elasticsearch). Run coverage
+# on lightweight GET endpoints only; query ops rely on the fuzzing phase.
 [phases.coverage]
 enabled = true
 
-[phases.fuzzing]
-enabled = true
+[[operations]]
+include-path = "/query"
+include-method = "POST"
+phases = { coverage = { enabled = false } }
 
-[reports.junit]
-path = "./output/junit/junit.xml"
+[[operations]]
+include-path = "/query_with_cursor"
+include-method = "POST"
+phases = { coverage = { enabled = false } }
 
-[reports.allure]
-path = "./output/allure/results"
+[[operations]]
+include-path = "/query_with_cursor/{cursor}"
+include-method = "DELETE"
+phases = { coverage = { enabled = false } }

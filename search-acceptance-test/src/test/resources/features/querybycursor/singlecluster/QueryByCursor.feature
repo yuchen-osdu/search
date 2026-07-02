@@ -60,7 +60,7 @@ Feature: Search recursively on cursor with different queries
       | "tenant1" | "tenant1" | "tenant1:search<timestamp>:*:*" | "\"OFFICE2\" \| OFFICE3 \| OFFICE5" | 1     | All             | 1           | 1           |
 
   @default
-  Scenario Outline: Search recursively page by page data across the kinds with invalid inputs
+  Scenario Outline: Search recursively page by page data across the kinds with invalid cursor
     When I send <query> with <kind>
     And I limit the count of returned results to <limit>
     And I set an invalid cursor
@@ -68,8 +68,18 @@ Feature: Search recursively on cursor with different queries
     Then I should get <response_code> response with reason: <reponse_type>, message: <response_message> and errors: <errors>
 
     Examples:
+      | tenant    | kind                                       | query | limit | response_code | reponse_type                  | response_message                                  | errors |
+      | "tenant1" | "tenant1:search<timestamp>:test-data--Integration:1.0.1" | None  | None  | 400           | "Can't find the given cursor" | "The given cursor is invalid or expired"          | ""     |
+
+  @default
+  Scenario Outline: Search recursively page by page data across the kinds with invalid inputs
+    When I send <query> with <kind>
+    And I limit the count of returned results to <limit>
+    And I send request to tenant <tenant>
+    Then I should get <response_code> response with reason: <reponse_type>, message: <response_message> and errors: <errors>
+
+    Examples:
       | tenant    | kind                                       | query | limit | response_code | reponse_type                  | response_message                                  | errors                                    |
-      | "tenant1" | "tenant1:search<timestamp>:test-data--Integration:1.0.1" | None  | None  | 400           | "Can't find the given cursor" | "The given cursor is invalid or expired"          | ""                                        |
       | "tenant1" | "*:*:*"                                    | None  | 0     | 400           | "Bad Request"                 | "Invalid parameters were given on search request" | "Not a valid record kind format. Found: *:*:*"   |
       | "tenant1" | "tenant1:search<timestamp>:test-data--Integration:1.0.1" | None  | -1    | 400           | "Bad Request"                 | "Invalid parameters were given on search request" | "'limit' must be equal or greater than 0" |
 

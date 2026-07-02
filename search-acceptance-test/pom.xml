@@ -11,6 +11,7 @@
 
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
+        <os-core-common.version>trusted-tighten-search-schema-complete-SNAPSHOT</os-core-common.version>
         <os-core-test.version>0.2.9</os-core-test.version>
         <lombok.version>1.18.46</lombok.version>
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
@@ -23,6 +24,17 @@
             --add-opens=java.desktop/java.awt.font=ALL-UNNAMED
         </argLine>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- os-core-test pins 7.1.0; keep acceptance tests on the same os-core-common as search-service -->
+            <dependency>
+                <groupId>org.opengroup.osdu</groupId>
+                <artifactId>os-core-common</artifactId>
+                <version>${os-core-common.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>

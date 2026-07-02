@@ -110,6 +110,10 @@ public class BaseSearchSteps {
         SearchTestConfig.updateEntitlementsDomainFromGroupId();
         this.scenario = scenario;
         headers = new HashMap<>();
+        spatialFilter = new SpatialFilter();
+        byBoundingBox = null;
+        byIntersection = null;
+        byWithinPolygon = null;
     }
 
     public static void setupSuiteLegalTag() {
@@ -295,8 +299,8 @@ public class BaseSearchSteps {
         return Boolean.TRUE.equals(USE_SEARCH_AFTER_CURSOR.get());
     }
 
-    protected HttpResponse<OpenApiSpec> executeGetApiDocs(Map<String, String> requestHeaders) {
-        HttpResponse<OpenApiSpec> response = searchClient().getApiDocs(requestHeaders);
+    protected HttpResponse<OpenApiSpec> executeGetApiDocs() {
+        HttpResponse<OpenApiSpec> response = searchClient().getApiDocs();
         logResponse(response);
         return response;
     }
