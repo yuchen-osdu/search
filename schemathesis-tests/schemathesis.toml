@@ -1,6 +1,8 @@
 # Spring MVC ignores undeclared query parameters (returns 200 with a valid body).
 # OpenAPI lists only documented params, so Schemathesis negative_data_rejection
 # would fail on extra query params even though the API intentionally accepts them.
+hooks = "./hooks/hooks.py"
+
 [checks.negative_data_rejection]
 enabled = false
 
