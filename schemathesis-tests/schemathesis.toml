@@ -1,19 +1,45 @@
-# Spring MVC ignores undeclared query parameters (returns 200 with a valid body).
-# OpenAPI lists only documented params, so Schemathesis negative_data_rejection
-# would fail on extra query params even though the API intentionally accepts them.
+seed = 42424242424424242
+workers = 1
+continue-on-failure = true
+request-timeout = 30.0
 hooks = "./hooks/hooks.py"
 
-[checks.negative_data_rejection]
-enabled = false
+[headers]
+data-partition-id = "${DATA_PARTITION_ID}"
 
 [generation]
+mode = 'all'
 max-examples = 20
 
-# Coverage on POST /query* is slow (regex-backed kind/cursor + Elasticsearch). Run coverage
-# on lightweight GET endpoints only; query ops rely on the fuzzing phase.
+[phases.stateful]
+enabled = false
+
+[phases.examples]
+enabled = true
+
 [phases.coverage]
 enabled = true
 
+[phases.fuzzing]
+enabled = true
+
+[reports.junit]
+path = './output/junit/junit.xml'
+
+[reports.ndjson]
+path = './output/ndjson/events.ndjson'
+
+[reports.allure]
+path = './output/allure/results'
+
+# Spring MVC ignores undeclared query parameters (returns 200 with a valid body).
+# OpenAPI lists only documented params, so Schemathesis negative_data_rejection
+# would fail on extra query params even though the API intentionally accepts them.
+[checks.negative_data_rejection]
+enabled = false
+
+# Coverage on POST /query* is slow (regex-backed kind/cursor + Elasticsearch). Run coverage
+# on lightweight GET endpoints only; query ops rely on the fuzzing phase.
 [[operations]]
 include-path = "/query"
 include-method = "POST"

@@ -6,9 +6,9 @@ into POST ``/query*`` generation (avoids ``filter_too_much`` on 4.22.4).
 ``normalize_query_kind_and_cursor_case`` dedupes ``kind`` lists and drops body ``cursor`` on
 ``POST /query_with_cursor`` (first-page only).
 
-``data-partition-id`` is pinned globally via ``[headers]`` in schemathesis-base (merged config).
+``data-partition-id`` is pinned via ``[headers]`` in ``schemathesis.toml``.
 
-Loaded via ``hooks = "./hooks/hooks.py"`` in the merged config (from schemathesis-base).
+Loaded via ``hooks = "./hooks/hooks.py"`` in ``schemathesis.toml``.
 """
 
 from __future__ import annotations

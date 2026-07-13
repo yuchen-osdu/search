@@ -124,5 +124,5 @@ aws-test-java:
 schemathesis-tests:
   extends: .schemathesis-tests-template
   variables:
-    # schemathesis-base build-image job 4345417 (commit 4ec32310)
-    SCHEMATHESIS_BASE_IMAGE: community.opengroup.org:5555/osdu/platform/system/sdks/schemathesis-base:4ec32310
+    # schemathesis-base build-image (commit 65dc9b3c)
+    SCHEMATHESIS_BASE_IMAGE: community.opengroup.org:5555/osdu/platform/system/sdks/schemathesis-base:65dc9b3c
