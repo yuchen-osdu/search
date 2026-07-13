@@ -4,9 +4,6 @@ continue-on-failure = true
 request-timeout = 30.0
 hooks = "./hooks/hooks.py"
 
-[headers]
-data-partition-id = "${DATA_PARTITION_ID}"
-
 [generation]
 mode = 'all'
 max-examples = 20
