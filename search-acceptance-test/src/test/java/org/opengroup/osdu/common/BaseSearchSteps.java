@@ -5,6 +5,7 @@ import io.cucumber.java.Scenario;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.search.CursorQueryRequest;
 import org.opengroup.osdu.core.common.model.search.CursorQueryResponse;
@@ -191,15 +192,9 @@ public class BaseSearchSteps {
                     "Search index probe attempt {}/{} for kind '{}' (resolved='{}'): status={}, resultCount={}",
                     attemptNumber, maxAttempts, kind, resolvedKind, response.statusCode(), resultCount);
             } catch (ClientException exception) {
-                log.info(
-                    "Search index probe attempt {}/{} for kind '{}' (resolved='{}') failed: {}",
-                    attemptNumber, maxAttempts, kind, resolvedKind, exception.getMessage());
-                if (exception.getError() != null) {
-                    log.debug(
-                        "Search index probe attempt {}/{} error body for kind '{}' (resolved='{}'): {}",
-                        attemptNumber, maxAttempts, kind, resolvedKind,
-                        formatResponseBody(exception.getError()));
-                }
+                logClientException(String.format(
+                    "Search index probe attempt %d/%d for kind '%s' (resolved='%s')",
+                    attemptNumber, maxAttempts, kind, resolvedKind), exception);
             }
             if (attemptNumber < maxAttempts) {
                 try {
@@ -358,6 +353,28 @@ public class BaseSearchSteps {
         return beautifyJsonString(payload);
     }
 
+    private static void logClientException(String context, ClientException exception) {
+        log.error("{}: status={}, message={}", context, exception.getStatusCode(), exception.getMessage());
+        AppError error = exception.getError();
+        if (error != null) {
+            log.error("{}: error={}", context, formatClientError(error));
+            if (error.getOriginalException() != null) {
+                log.error("{}: originalException={}", context, error.getOriginalException().toString(),
+                    error.getOriginalException());
+            }
+        }
+    }
+
+    private static String formatClientError(AppError error) {
+        if (error.getReason() != null && !error.getReason().isBlank()) {
+            return error.getReason();
+        }
+        if (error.getMessage() != null && !error.getMessage().isBlank()) {
+            return error.getMessage();
+        }
+        return toJson(error);
+    }
+
     protected String getTenantMapping(String tenant) {
         if (tenantMap.containsKey(tenant)) {
             return tenantMap.get(tenant);
@@ -443,7 +460,12 @@ public class BaseSearchSteps {
     private void createSchema(Setup input) {
         PersistentSchemaTestIndex testIndex = new PersistentSchemaTestIndex(schemaClient(), this);
         testIndex.setSchemaFile(input.getSchemaFile());
-        testIndex.setupSchema();
+        try {
+            testIndex.setupSchema();
+        } catch (ClientException exception) {
+            logClientException("Schema setup failed for schemaFile='" + input.getSchemaFile() + "'", exception);
+            throw exception;
+        }
         testIndex.setKind(testIndex.getSchemaModel().getSchemaInfo().getSchemaIdentity().getId());
     }
 
