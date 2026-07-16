@@ -195,10 +195,6 @@ paths:
       responses:
         "200":
           description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
         "502":
           description: Bad Gateway
           content:
@@ -222,10 +218,6 @@ paths:
       responses:
         "200":
           description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
         "502":
           description: Bad Gateway
           content:
