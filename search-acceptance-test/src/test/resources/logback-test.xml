@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!-- Acceptance test steps and shared helpers -->
+  <logger name="org.opengroup.osdu.common" level="INFO" />
+  <logger name="org.opengroup.osdu.step_definitions" level="INFO" />
+  <logger name="org.opengroup.osdu.util" level="INFO" />
+
+  <!-- Client teardown and HTTP calls (Deleted record/index, ***** teardown markers) -->
+  <logger name="org.opengroup.osdu.core.test.client" level="INFO" />
+  <logger name="org.opengroup.osdu.core.test" level="INFO" />
+
+  <!-- Set to DEBUG to include search index probe details and response bodies -->
+  <!-- <logger name="org.opengroup.osdu.common.BaseSearchSteps" level="DEBUG" /> -->
+
+  <logger name="org.apache.hc" level="WARN" />
+  <logger name="org.apache.http" level="WARN" />
+  <logger name="com.nimbusds" level="WARN" />
+  <logger name="io.cucumber" level="WARN" />
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE" />
+  </root>
+</configuration>

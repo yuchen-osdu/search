@@ -1,0 +1,7 @@
+{
+  "PRIVILEGED_USER": [
+    "users",
+    "service.entitlements.user",
+    "service.search.user"
+  ]
+}
