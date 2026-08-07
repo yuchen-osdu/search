@@ -39,7 +39,14 @@ public class SearchAfterSettingsCacheImplTest {
 
 
     private final String s = "s";
-    private final SearchAfterSettings o = new SearchAfterSettings("pitId", "userId", new ArrayList<String>(), new ArrayList<String>(), false, 0, null);
+    private final SearchAfterSettings o = SearchAfterSettings.builder()
+            .pitId("pitId")
+            .userId("userId")
+            .sortOptionsJsons(new ArrayList<String>())
+            .fieldValueJsons(new ArrayList<String>())
+            .closed(false)
+            .totalCount(0L)
+            .build();
     private final String password = "password";
     private final String endpoint = "CACHE_CLUSTER_ENDPOINT";
     private final String port = "6369";
