@@ -22,3 +22,14 @@ cimpl-standby-acceptance-test:
   variables:
     DEFAULT_DATA_PARTITION_ID_TENANT2: non-exist
     CUCUMBER_OPTIONS: "@default or @health or @SpatialLongitudeStandardRange"
+
+# osdu-main jobs
+cimpl-dev-acceptance-test:
+  variables:
+    DEFAULT_DATA_PARTITION_ID_TENANT2: non-exist
+    CUCUMBER_OPTIONS: "@default or @health or @SpatialLongitudeStandardRange"
+
+cimpl-dev-backup-acceptance-test:
+  variables:
+    DEFAULT_DATA_PARTITION_ID_TENANT2: non-exist
+    CUCUMBER_OPTIONS: "@default or @health or @SpatialLongitudeStandardRange"
