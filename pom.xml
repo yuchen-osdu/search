@@ -365,12 +365,6 @@
             </modules>
         </profile>
         <profile>
-            <id>aws</id>
-            <modules>
-                <module>provider/search-aws</module>
-            </modules>
-        </profile>
-        <profile>
             <id>azure</id>
             <modules>
                 <module>provider/search-azure</module>
