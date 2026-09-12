@@ -42,16 +42,20 @@ import org.opengroup.osdu.search.util.ElasticClientHandler;
 import org.opengroup.osdu.search.util.IQueryPerformanceLogger;
 import org.opengroup.osdu.search.util.ISortParserUtil;
 import org.opengroup.osdu.search.util.ResponseExceptionParser;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.lang.reflect.Type;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 
 @Service
@@ -75,6 +79,15 @@ public class SearchAfterQueryServiceImpl extends CoreQueryBase implements ISearc
     private final Time SEARCH_AFTER_TIMEOUT = Time.of(t -> t.time("90s"));
     private final MessageDigest digest;
     private final JsonpMapper mapper;
+    private static final List<OverridableField<?>> OVERRIDABLE_FIELDS = List.of(
+            new OverridableField<>(Query::getLimit, limit -> limit > 0, Query::setLimit),
+            new OverridableField<>(Query::getQuery, SearchAfterQueryServiceImpl::isProvided, Query::setQuery),
+            new OverridableField<>(Query::getSuggestPhrase, SearchAfterQueryServiceImpl::isProvided, Query::setSuggestPhrase),
+            new OverridableField<>(Query::getReturnedFields, SearchAfterQueryServiceImpl::isProvided, Query::setReturnedFields),
+            new OverridableField<>(Query::getExcludedFields, SearchAfterQueryServiceImpl::isProvided, Query::setExcludedFields),
+            new OverridableField<>(Query::getHighlightedFields, SearchAfterQueryServiceImpl::isProvided, Query::setHighlightedFields),
+            new OverridableField<>(Query::getSpatialFilter, Objects::nonNull, Query::setSpatialFilter),
+            new OverridableField<>(Query::isQueryAsOwner, Boolean.TRUE::equals, Query::setQueryAsOwner));
 
     public SearchAfterQueryServiceImpl() throws NoSuchAlgorithmException {
         this.digest = MessageDigest.getInstance("MD5");
@@ -237,13 +250,20 @@ public class SearchAfterQueryServiceImpl extends CoreQueryBase implements ISearc
 
         // Set TrackTotalCount = true to get the total count in the first query
         searchRequest.setTrackTotalCount(true);
-        SearchResponse<Map<String, Object>> searchResponse = this.makeSearchRequest(searchRequest, client);
+        SearchResponse<Map<String, Object>> searchResponse;
+        try {
+            searchResponse = this.makeSearchRequest(searchRequest, client);
+        } finally {
+            searchRequest.setTrackTotalCount(false);
+        }
         List<SortOptions> sortOptionsList = this.getSortOptions(searchRequest, client);
         SearchAfterSettings cursorSettings = SearchAfterSettings
                 .builder()
                 .userId(dpsHeaders.getUserEmail())
                 .sortOptionsJsons(this.serializeSortOptions(sortOptionsList))
-                .totalCount(searchResponse.hits().total().value()).build();
+                .totalCount(searchResponse.hits().total().value())
+                .cachedQuery(searchRequest)
+                .build();
         CursorQueryResponse response = processSearchResponse(searchResponse, searchRequest, client, cursorSettings);
 
         Long latency = System.currentTimeMillis() - startTime;
@@ -258,7 +278,10 @@ public class SearchAfterQueryServiceImpl extends CoreQueryBase implements ISearc
         // build query
         List<SortOptions> sortOptionsList = this.deserialize(cursorSettings.getSortOptionsJsons(), SortOptions.class);
         List<FieldValue> fieldValues = this.deserialize(cursorSettings.getFieldValueJsons(), FieldValue.class);
-        SearchRequest.Builder sourceBuilder = this.createSearchSourceBuilder(searchRequest);
+
+        CursorQueryRequest effectiveRequest = this.getEffectiveRequest(searchRequest, cursorSettings);
+
+        SearchRequest.Builder sourceBuilder = this.createSearchSourceBuilder(effectiveRequest);
         sourceBuilder.pit(pit -> pit.id(cursorSettings.getPitId()).keepAlive(SEARCH_AFTER_TIMEOUT))
                 .sort(sortOptionsList)
                 .searchAfter(fieldValues)
@@ -266,12 +289,52 @@ public class SearchAfterQueryServiceImpl extends CoreQueryBase implements ISearc
         SearchRequest elasticSearchRequest = sourceBuilder.build();
         SearchResponse<Map<String, Object>> searchResponse = client.search(elasticSearchRequest, (Type) Map.class);
 
-        CursorQueryResponse response = processSearchResponse(searchResponse, searchRequest, client, cursorSettings);
+        cursorSettings.setCachedQuery(effectiveRequest);
+
+        CursorQueryResponse response = processSearchResponse(searchResponse, effectiveRequest, client, cursorSettings);
 
         Long latency = System.currentTimeMillis() - startTime;
-        tracingLogger.log(searchRequest, latency, 200);
+        tracingLogger.log(effectiveRequest, latency, 200);
 
         return response;
+    }
+
+    private CursorQueryRequest getEffectiveRequest(CursorQueryRequest searchRequest, SearchAfterSettings cursorSettings) {
+        CursorQueryRequest cachedQuery = cursorSettings.getCachedQuery();
+        if (cachedQuery == null) {
+            return searchRequest;
+        }
+
+        CursorQueryRequest effectiveRequest = new CursorQueryRequest();
+        BeanUtils.copyProperties(cachedQuery, effectiveRequest);
+        OVERRIDABLE_FIELDS.forEach(field -> field.applyIfProvided(searchRequest, effectiveRequest));
+
+        effectiveRequest.setCursor(searchRequest.getCursor());
+        // The total count is served from the cursor settings, it is only tracked on the initial query.
+        effectiveRequest.setTrackTotalCount(false);
+
+        return effectiveRequest;
+    }
+
+    private record OverridableField<T>(
+            Function<CursorQueryRequest, T> getter,
+            Predicate<T> isProvided,
+            BiConsumer<CursorQueryRequest, T> setter
+    ) {
+        void applyIfProvided(CursorQueryRequest source, CursorQueryRequest target) {
+            T value = this.getter.apply(source);
+            if (this.isProvided.test(value)) {
+                this.setter.accept(target, value);
+            }
+        }
+    }
+
+    private static boolean isProvided(String value) {
+        return !Strings.isNullOrEmpty(value);
+    }
+
+    private static boolean isProvided(List<String> values) {
+        return values != null && !values.isEmpty();
     }
 
     private CursorQueryResponse processSearchResponse(SearchResponse<Map<String, Object>> searchResponse, CursorQueryRequest searchRequest, ElasticsearchClient client, SearchAfterSettings cursorSettings) {

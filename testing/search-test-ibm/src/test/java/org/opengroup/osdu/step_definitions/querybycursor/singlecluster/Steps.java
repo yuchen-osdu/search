@@ -87,6 +87,16 @@ public class Steps extends QueryByCursorSteps {
         super.i_set_an_invalid_cursor();
     }
 
+    @When("^I send a subsequent request with only the kind and cursor$")
+    public void i_send_a_subsequent_request_with_only_the_kind_and_cursor() {
+        super.i_send_a_subsequent_request_with_only_the_kind_and_cursor();
+    }
+
+    @When("^I send a subsequent request with the cursor, limit (\\d+) and fields ([\"(\\w-.)\",?]*)$")
+    public void i_send_a_subsequent_request_with_the_cursor_limit_and_fields(int limit, List<String> returnedFields) {
+        super.i_send_a_subsequent_request_with_the_cursor_limit_and_fields(limit, returnedFields);
+    }
+
     @When("^I send request to tenant \"(.*?)\"$")
     public void i_send_request_to_tenant(String tenant) {
         super.i_send_request_to_tenant(tenant);
@@ -117,6 +127,11 @@ public class Steps extends QueryByCursorSteps {
     @Then("^I should get in response (\\d+) records along with a cursor$")
     public void i_should_get_in_response_records_along_with_a_cursor(int resultCount) {
         super.i_should_get_in_response_records_along_with_a_cursor(resultCount);
+    }
+
+    @Then("^I should get in response (\\d+) records containing only ([\"(\\w-.)\",?]*)$")
+    public void i_should_get_in_response_records_containing_only_fields(int resultCount, List<String> fields) {
+        super.i_should_get_in_response_records_containing_only_fields(resultCount, fields);
     }
 
     @Then("^I should get in response (\\d+) records$")
