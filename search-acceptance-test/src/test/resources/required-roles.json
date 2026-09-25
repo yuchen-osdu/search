@@ -2,8 +2,6 @@
   "PRIVILEGED_USER": [
     "users",
     "service.entitlements.user",
-    "service.search.user",
-    "data.test1",
-    "data.integration.test"
+    "service.search.user"
   ]
 }

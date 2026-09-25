@@ -1,13 +1,4 @@
 variables:
-  AWS_BUILD_SUBDIR: provider/search-aws/build-aws
-  AWS_TEST_SUBDIR: testing/search-test-aws
-  AWS_CHART_SUBDIR: devops/aws/chart
-  AWS_SERVICE: search
-  AWS_SERVICE_GATEWAY: osdu-gateway
-  AWS_ENVIRONMENT: dev
-  AWS_DEPLOY_TARGET: TF
-  AWS_EKS_DEPLOYMENT_NAME: os-search
-
   GCP_BUILD_SUBDIR: provider/search-gcp
   GCP_INT_TEST_SUBDIR: testing/search-test-gcp
   GCP_APPLICATION_NAME: osdu-search
@@ -24,8 +15,8 @@ variables:
   SERVICE_JAVA_VERSION: "17"
   ACCEPTANCE_TEST_DIR: "search-acceptance-test"
 
-  CIMPL_OPENAPI_SPEC_PATH: docs/api/community/v2/openapi.yaml
-  CIMPL_OPENAPI_YAML_ROUTE: /api/search/v2/api-docs.yaml
+  CIMPL_OPENAPI_CONFIG_ROUTE: /api/search/v2/api-docs/swagger-config
+  SCHEMATHESIS_OPENAPI_YAML_ROUTE: /api/search/v2/api-docs.yaml
 
   CORE_BUILD_SUBDIR: search-core
 
@@ -59,14 +50,6 @@ include:
 
   - project: "osdu/platform/ci-cd-pipelines"
     ref: override_schemathesis
-    file: "cloud-providers/aws-global.yml"
-
-  - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
-    file: "cloud-providers/aws-maven.yml"
-
-  - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
     file: "cloud-providers/azure.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
@@ -78,9 +61,6 @@ include:
     file: "cloud-providers/cimpl-global.yml"
 
   - local: "devops/core-plus/pipeline/override-stages.yml"
-  - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
-    file: "cloud-providers/aws-one-pipeline.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
     ref: override_schemathesis
@@ -95,7 +75,6 @@ include:
     file: "reporting/schemathesis.yml"
 
   - local: "devops/gc/pipeline/override-stages.yml"
-  - local: "devops/aws/pipeline/override-stages.yml"
 
 
 download_plugins:
@@ -117,9 +96,6 @@ download_plugins:
   only:
     variables:
       - $PROTECTED == '1'
-
-aws-test-java:
-  image: $CI_REGISTRY/osdu/platform/deployment-and-operations/base-containers-aws/aws-maven/aws-maven:v2.0
 
 schemathesis-tests:
   extends: .schemathesis-tests-template
