@@ -4,21 +4,18 @@ variables:
   CIMPL_BUILD_PATH: "search-core-plus/cloudbuild/Dockerfile"
   DISABLE_INTEGRATION_TEST: true
 
-cimpl-acceptance-test:
+# osdu-main jobs
+cimpl-dev-acceptance-test:
   variables:
     DEFAULT_DATA_PARTITION_ID_TENANT2: non-exist
     CUCUMBER_OPTIONS: "@default or @health or @SpatialLongitudeStandardRange"
 
-#dev2 jobs
-
-cimpl-dev2-acceptance-test:
+cimpl-dev-backup-acceptance-test:
   variables:
     DEFAULT_DATA_PARTITION_ID_TENANT2: non-exist
     CUCUMBER_OPTIONS: "@default or @health or @SpatialLongitudeStandardRange"
 
-#standby (Blue-Green) jobs
-
-cimpl-standby-acceptance-test:
+cimpl-prod-acceptance-test:
   variables:
     DEFAULT_DATA_PARTITION_ID_TENANT2: non-exist
     CUCUMBER_OPTIONS: "@default or @health or @SpatialLongitudeStandardRange"

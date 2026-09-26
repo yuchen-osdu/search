@@ -13,6 +13,7 @@ import static io.cucumber.junit.platform.engine.Constants.PLUGIN_PROPERTY_NAME;
 @Suite
 @IncludeEngines("cucumber")
 @SelectClasspathResource("features/querybycursor/singlecluster/QueryByCursor.feature")
+@SelectClasspathResource("features/querybycursor/search_after/QueryByCursorSearchAfter.feature")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = CucumberGlue.QUERY_BY_CURSOR)
 @ConfigurationParameter(
     key = PLUGIN_PROPERTY_NAME,
