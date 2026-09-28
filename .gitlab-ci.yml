@@ -82,8 +82,9 @@ download_plugins:
     variables:
       - $PROTECTED == '1'
 
-schemathesis-tests:
-  extends: .schemathesis-tests-template
+# schemathesis-dev-tests loads schemathesis-tests/schemathesis.toml via
+# SCHEMATHESIS_CONFIG_FILE when present.
+schemathesis-dev-tests:
   variables:
     # schemathesis-base master build-image job 4637727 (commit 40b69111)
     SCHEMATHESIS_BASE_IMAGE: community.opengroup.org:5555/osdu/platform/system/sdks/schemathesis-base:40b69111
