@@ -20,58 +20,43 @@ variables:
 
   CORE_BUILD_SUBDIR: search-core
 
-  # Pin ci-cd-pipelines for schemathesis override CD testing. Remove after merge.
-  CI_CD_PIPELINES_REF: override_schemathesis
-
 include:
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
     file: "standard-setup.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
     file: "build/maven.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
     file: "scanners/fossa-maven.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
     file: "scanners/gitlab-ultimate.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
     file: "reporting/reporting.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
     file: "publishing/common-pages.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
     file: "cloud-providers/azure.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
     file: "cloud-providers/gc-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
     file: "cloud-providers/cimpl-global.yml"
 
   - local: "devops/core-plus/pipeline/override-stages.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
     file: "cloud-providers/azure-one-pipeline.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
     file: "cloud-providers/gc-one-pipeline.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: override_schemathesis
     file: "reporting/schemathesis.yml"
 
   - local: "devops/gc/pipeline/override-stages.yml"
@@ -100,5 +85,5 @@ download_plugins:
 schemathesis-tests:
   extends: .schemathesis-tests-template
   variables:
-    # schemathesis-base build-image (commit 00ddce39)
-    SCHEMATHESIS_BASE_IMAGE: community.opengroup.org:5555/osdu/platform/system/sdks/schemathesis-base:00ddce39
+    # schemathesis-base master build-image job 4637727 (commit 40b69111)
+    SCHEMATHESIS_BASE_IMAGE: community.opengroup.org:5555/osdu/platform/system/sdks/schemathesis-base:40b69111
