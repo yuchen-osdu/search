@@ -54,7 +54,6 @@ import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.http.ContentTooLongException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -102,7 +101,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 public class CoreQueryServiceImplTest {
 
-    private static final String COLLABORATIONS_FEATURE_NAME = "collaborations-enabled";
     private static final String COLLABORATION_ID = "c3cc62d5-0ff6-4931-b4e8-51e5e72667fc";
     private static final String COLLABORATION_APPLICATION = "pws";
     private final String DATA_GROUPS = "X-Data-Groups";
@@ -278,6 +276,7 @@ public class CoreQueryServiceImplTest {
                      },
                      "query": {
                          "bool": {
+                            "boost":1.0,
                              "filter": [{
                                      "geo_shape": {
                                          "field": {
@@ -292,7 +291,13 @@ public class CoreQueryServiceImplTest {
                                          "x-acl": ["data.welldb.viewers@common.evd.cloud.slb-ds.com", "data.npd.viewers@common.evd.cloud.slb-ds.com"]
                                      ,"boost": 1.0}
                                  }
-                             ]
+                             ],
+                              "must_not": [{
+                                  "exists": {
+                                      "boost": 1.0,
+                                      "field": "collaborationId"
+                                  }
+                              }]
                          }
                      },
                      "size": 10,
@@ -336,6 +341,7 @@ public class CoreQueryServiceImplTest {
                       },
                       "query": {
                           "bool": {
+                          "boost":1.0,
                               "filter": [{
                                       "geo_shape": {
                                           "field": {
@@ -350,7 +356,13 @@ public class CoreQueryServiceImplTest {
                                           "x-acl": ["data.welldb.viewers@common.evd.cloud.slb-ds.com", "data.npd.viewers@common.evd.cloud.slb-ds.com"]
                                       ,"boost": 1.0}
                                   }
-                              ]
+                              ],
+                              "must_not": [{
+                                  "exists": {
+                                      "boost": 1.0,
+                                      "field": "collaborationId"
+                                  }
+                              }]
                           }
                       },
                       "size": 10,
@@ -394,6 +406,7 @@ public class CoreQueryServiceImplTest {
                    },
                    "query": {
                        "bool": {
+                       "boost":1.0,
                            "filter": [{
                                    "geo_shape": {
                                        "field": {
@@ -409,7 +422,13 @@ public class CoreQueryServiceImplTest {
                                        "boost" : 1.0
                                    }
                                }
-                           ]
+                           ],
+                              "must_not": [{
+                                  "exists": {
+                                      "boost": 1.0,
+                                      "field": "collaborationId"
+                                  }
+                              }]
                        }
                    },
                    "size": 10,
@@ -453,6 +472,7 @@ public class CoreQueryServiceImplTest {
                     },
                     "query": {
                         "bool": {
+                        "boost":1.0,
                             "filter": [{
                                     "geo_shape": {
                                         "field": {
@@ -468,7 +488,13 @@ public class CoreQueryServiceImplTest {
                                         "boost": 1.0
                                     }
                                 }
-                            ]
+                            ],
+                              "must_not": [{
+                                  "exists": {
+                                      "boost": 1.0,
+                                      "field": "collaborationId"
+                                  }
+                              }]
                         }
                     },
                     "size": 10,
@@ -512,6 +538,7 @@ public class CoreQueryServiceImplTest {
                     },
                     "query": {
                         "bool": {
+                        "boost":1.0,
                             "filter": [{
                                     "geo_shape": {
                                         "field": {
@@ -526,7 +553,13 @@ public class CoreQueryServiceImplTest {
                                         "x-acl": ["data.welldb.viewers@common.evd.cloud.slb-ds.com", "data.npd.viewers@common.evd.cloud.slb-ds.com"]
                                     ,"boost": 1.0}
                                 }
-                            ]
+                            ],
+                              "must_not": [{
+                                  "exists": {
+                                      "boost": 1.0,
+                                      "field": "collaborationId"
+                                  }
+                              }]
                         }
                     },
                     "size": 10,
@@ -870,12 +903,11 @@ public class CoreQueryServiceImplTest {
     }
 
     @Test
-    public void should_work_with_x_collaboration_when_feature_flag_enabled() throws IOException {
+    public void should_work_with_x_collaboration() throws IOException {
         String xCollaboration = String.format("id=%s,application=%s", COLLABORATION_ID, COLLABORATION_APPLICATION);
         CollaborationContext collaborationContext = new CollaborationContext(
             UUID.fromString(COLLABORATION_ID), COLLABORATION_APPLICATION, Map.of());
         Optional<CollaborationContext> optionalCollaborationContext = Optional.of(collaborationContext);
-        when(autocompleteFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
         when(dpsHeaders.getCollaboration()).thenReturn(xCollaboration);
         when(collaborationContextFactory.create(xCollaboration)).thenReturn(optionalCollaborationContext);
         String expected = getStringFromFile("src/test/resources/testqueries/expected/simple-query-with-x-collaboration.json");
@@ -890,8 +922,7 @@ public class CoreQueryServiceImplTest {
     }
 
     @Test
-    public void should_work_without_x_collaboration_when_feature_flag_enabled() throws IOException {
-        when(autocompleteFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
+    public void should_work_without_x_collaboration() throws IOException {
         String expected = getStringFromFile("src/test/resources/testqueries/expected/simple-query-without-x-collaboration.json");
         BoolQuery expectedQuery = BoolQuery.of(s -> s.withJson(new StringReader(expected)));
 
