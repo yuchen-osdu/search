@@ -31,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -111,6 +112,8 @@ public class SearchAfterQueryServiceImplTest {
     private ResponseExceptionParser exceptionParser;
     @Mock
     public IFeatureFlag collaborationFeatureFlag;
+    @Mock
+    private CollaborationContextFactory collaborationContextFactory;
     @InjectMocks
     private SearchAfterQueryServiceImpl sut;
 
