@@ -23,9 +23,6 @@ enabled = true
 [reports.junit]
 path = './output/junit/junit.xml'
 
-[reports.ndjson]
-path = './output/ndjson/events.ndjson'
-
 [reports.allure]
 path = './output/allure/results'
 
