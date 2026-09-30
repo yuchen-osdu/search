@@ -42,7 +42,7 @@
 		<java.version>17</java.version>
 		<maven.compiler.release>${java.version}</maven.compiler.release>
 		<jackson.version>2.21.2</jackson.version>
-		<os-core-common.version>trusted-tighten-search-schema-complete-SNAPSHOT</os-core-common.version>
+		<os-core-common.version>8.2.0</os-core-common.version>
 		<lombok.version>1.18.42</lombok.version>
 		<maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
 	</properties>
