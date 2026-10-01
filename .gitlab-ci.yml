@@ -89,8 +89,8 @@ download_plugins:
 # SCHEMATHESIS_CONFIG_FILE when present (see reporting/schemathesis.yml).
 .schemathesis-search-common:
   variables:
-    # schemathesis-base master build-image job 4637727 (commit 40b69111)
-    SCHEMATHESIS_BASE_IMAGE: community.opengroup.org:5555/osdu/platform/system/sdks/schemathesis-base:40b69111
+    # schemathesis-base latest image from master
+    SCHEMATHESIS_BASE_IMAGE: community.opengroup.org:5555/osdu/platform/system/sdks/schemathesis-base:latest
 
 .schemathesis-search-matrix:
   parallel:
