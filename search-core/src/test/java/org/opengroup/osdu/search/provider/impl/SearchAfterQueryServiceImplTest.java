@@ -54,6 +54,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -111,8 +112,6 @@ public class SearchAfterQueryServiceImplTest {
     @Mock
     private ResponseExceptionParser exceptionParser;
     @Mock
-    public IFeatureFlag collaborationFeatureFlag;
-    @Mock
     private CollaborationContextFactory collaborationContextFactory;
     @InjectMocks
     private SearchAfterQueryServiceImpl sut;
@@ -131,6 +130,7 @@ public class SearchAfterQueryServiceImplTest {
         Mockito.lenient().doReturn(client).when(elasticClientHandler).getOrCreateRestClient();
         Mockito.lenient().when(elasticLoggingConfig.getEnabled()).thenReturn(false);
         Mockito.lenient().when(elasticLoggingConfig.getThreshold()).thenReturn(200L);
+        Mockito.lenient().when(collaborationContextFactory.create(any())).thenReturn(Optional.empty());
         Mockito.lenient().when(userContext.isRootUser()).thenReturn(false);
     }
 

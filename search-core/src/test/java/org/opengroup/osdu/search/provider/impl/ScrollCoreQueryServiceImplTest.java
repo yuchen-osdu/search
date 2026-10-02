@@ -115,8 +115,6 @@ public class ScrollCoreQueryServiceImplTest {
     private ElasticLoggingConfig elasticLoggingConfig;
     @Mock
     private ResponseExceptionParser exceptionParser;
-    @Mock
-    public IFeatureFlag collaborationFeatureFlag;
     @InjectMocks
     private ScrollCoreQueryServiceImpl sut;
 
