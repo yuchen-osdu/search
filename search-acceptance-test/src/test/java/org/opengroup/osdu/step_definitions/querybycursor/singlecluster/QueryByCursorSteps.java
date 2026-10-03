@@ -20,9 +20,7 @@ import org.opengroup.osdu.core.test.client.ClientException;
 import org.opengroup.osdu.core.test.client.HttpResponse;
 import org.opengroup.osdu.util.Utility;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,7 +33,7 @@ import static org.opengroup.osdu.util.Utility.parseCommaSeparatedList;
 @SuppressWarnings("unused")
 public class QueryByCursorSteps extends BaseSearchSteps {
 
-    private final CursorQueryRequest requestQuery = new CursorQueryRequest();
+    private CursorQueryRequest requestQuery = new CursorQueryRequest();
 
     @Before
     public void before(Scenario scenario) {
@@ -133,6 +131,19 @@ public class QueryByCursorSteps extends BaseSearchSteps {
         requestQuery.setCursor("invalid cursor");
     }
 
+    @When("^I send a subsequent request with only the kind and cursor$")
+    public void i_send_a_subsequent_request_with_only_the_kind_and_cursor() {
+        requestQuery = nextPageRequest();
+    }
+
+    @When("^I send a subsequent request with the cursor, limit (\\d+) and fields (.*)$")
+    public void i_send_a_subsequent_request_with_the_cursor_limit_and_fields(int limit, String returnedFields) {
+        CursorQueryRequest nextPageRequest = nextPageRequest();
+        nextPageRequest.setLimit(limit);
+        nextPageRequest.setReturnedFields(parseCommaSeparatedList(returnedFields));
+        requestQuery = nextPageRequest;
+    }
+
     @Then("^I should get in response (\\d+) records along with a cursor$")
     public void i_should_get_in_response_records_along_with_a_cursor(int resultCount) {
         HttpResponse<CursorQueryResponse> response = executeCursorQuery(requestQuery, headers);
@@ -193,6 +204,41 @@ public class QueryByCursorSteps extends BaseSearchSteps {
         HttpResponse<QueryResponse> response = executeQuery(toQueryRequest(requestQuery), headers);
         assertEquals(HttpStatus.SC_OK, response.statusCode());
         assertEquals(Arrays.asList(autocompleteOptions.split(",")), response.body().getPhraseSuggestions());
+    }
+
+    @Then("^I should get in response (\\d+) records with exactly (.*)$")
+    public void i_should_get_in_response_records_with_exactly(int count, String fields) {
+        List<String> expectedFields = parseCommaSeparatedList(fields);
+        HttpResponse<CursorQueryResponse> response = executeCursorQuery(requestQuery, headers);
+        assertEquals(HttpStatus.SC_OK, response.statusCode());
+        assertEquals(count, response.body().getResults().size());
+
+        for (Map<String, Object> result : response.body().getResults()) {
+            Set<String> actualFieldPaths = flattenFieldPaths("", result);
+            for (String expectedField : expectedFields) {
+                assertTrue(Utility.containsField(result, expectedField),
+                        "Expected field missing: " + expectedField);
+            }
+            for (String actualField : actualFieldPaths) {
+                assertTrue(
+                        expectedFields.stream().anyMatch(f -> actualField.equals(f) || actualField.startsWith(f + ".")),
+                        "Unexpected field in response: " + actualField
+                                + " — the effective returnedFields were not honored");
+            }
+        }
+    }
+
+    private Set<String> flattenFieldPaths(String prefix, Map<String, Object> map) {
+        Set<String> paths = new HashSet<>();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            String path = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
+            if (entry.getValue() instanceof Map) {
+                paths.addAll(flattenFieldPaths(path, (Map<String, Object>) entry.getValue()));
+            } else {
+                paths.add(path);
+            }
+        }
+        return paths;
     }
 
     private void setReturnedFields(List<String> returnedFields) {
@@ -256,5 +302,12 @@ public class QueryByCursorSteps extends BaseSearchSteps {
         queryRequest.setSuggestPhrase(cursorQuery.getSuggestPhrase());
         queryRequest.setSpatialFilter(cursorQuery.getSpatialFilter());
         return queryRequest;
+    }
+
+    private CursorQueryRequest nextPageRequest() {
+        CursorQueryRequest nextPageRequest = new CursorQueryRequest();
+        nextPageRequest.setCursor(requestQuery.getCursor());
+        nextPageRequest.setKind(requestQuery.getKind());
+        return nextPageRequest;
     }
 }
