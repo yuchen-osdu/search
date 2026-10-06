@@ -3,10 +3,10 @@
 ``blend_query_kind_and_spatial_bodies`` blends known-good ``kind`` / ``spatialFilter`` /
 aligned ``sort`` values into POST ``/query*`` generation (avoids ``filter_too_much`` on 4.22.4).
 
-``normalize_query_kind_and_cursor_case`` drops generated values that OpenAPI cannot express:
-first-page ``cursor``, empty/multi-criteria spatial filters, and sort fields that Elasticsearch
-rejects (for example ``"0"``). Paths are matched by suffix so a server prefix such as
-``/api/search/v2`` does not skip the hook.
+``sanitize_query_body_before_call`` drops values OpenAPI cannot constrain (first-page
+``cursor``, empty/multi-criteria spatial filters, generated sort fields such as ``"0"``).
+It uses ``before_call`` so the examples phase is covered — ``map_case`` does not run on
+schema examples (Schemathesis 4.x).
 
 Loaded via ``hooks = "./hooks/hooks.py"`` in ``schemathesis.toml``.
 """
@@ -81,18 +81,18 @@ PREDEFINED_BODIES = st.one_of(
 )
 
 
-def _normalized_path(path: str | None) -> str:
+def _last_path_segment(path: str | None) -> str:
     if not path:
         return ""
-    return path.split("?", 1)[0].rstrip("/")
+    return path.split("?", 1)[0].rstrip("/").rsplit("/", 1)[-1]
 
 
 def _is_post_query(method: str, path: str | None) -> bool:
-    return method.upper() == "POST" and _normalized_path(path).endswith("/query")
+    return method.upper() == "POST" and _last_path_segment(path) == "query"
 
 
 def _is_post_query_with_cursor(method: str, path: str | None) -> bool:
-    return method.upper() == "POST" and _normalized_path(path).endswith("/query_with_cursor")
+    return method.upper() == "POST" and _last_path_segment(path) == "query_with_cursor"
 
 
 def _is_post_query_op(method: str, path: str | None) -> bool:
@@ -204,13 +204,12 @@ def blend_query_kind_and_spatial_bodies(context, strategy):
     return strategy
 
 
-@schemathesis.hook("map_case")
-def normalize_query_kind_and_cursor_case(context, case):
+@schemathesis.hook("before_call")
+def sanitize_query_body_before_call(context, case, kwargs):
+    """Sanitize every phase, including examples (map_case skips schema examples)."""
     body = case.body
     if not isinstance(body, dict):
-        return case
+        return
     if not _is_post_query_op(case.method, case.path):
-        return case
-
+        return
     _sanitize_query_body(body, case.method, case.path)
-    return case
