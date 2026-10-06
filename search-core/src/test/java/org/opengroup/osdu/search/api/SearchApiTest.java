@@ -250,18 +250,35 @@ public class SearchApiTest {
     }
 
     @Test
-    public void should_returnEmptyCursorQueryResponse_whenCursorClosed() throws Exception {
+    public void should_returnNoContent_whenSearchAfterCursorClosed() throws Exception {
         when(this.searchAfterFeatureManager.isEnabled()).thenReturn(true);
 
-        ResponseEntity<CursorQueryResponse> response = this.sut.closeCursor("098F6BCD4621D373CADE4E832627B4F", false);
+        ResponseEntity<Void> response = this.sut.closeCursor("098F6BCD4621D373CADE4E832627B4F", false);
 
         verify(this.searchAfterQueryService, times(1)).close("098F6BCD4621D373CADE4E832627B4F");
-        assertEquals(HttpServletResponse.SC_OK, response.getStatusCodeValue());
-        CursorQueryResponse apiResponse = response.getBody();
-        assertNotNull(apiResponse);
-        assertNull(apiResponse.getCursor());
-        assertTrue(apiResponse.getResults().isEmpty());
-        assertEquals(0, apiResponse.getTotalCount());
+        assertEquals(HttpServletResponse.SC_NO_CONTENT, response.getStatusCodeValue());
+        assertNull(response.getBody());
+    }
+
+    @Test
+    public void should_returnNoContentWithoutClosing_whenSearchAfterDisabled() throws Exception {
+        when(this.searchAfterFeatureManager.isEnabled()).thenReturn(false);
+
+        ResponseEntity<Void> response = this.sut.closeCursor("098F6BCD4621D373CADE4E832627B4F", false);
+
+        verify(this.searchAfterQueryService, never()).close(any());
+        assertEquals(HttpServletResponse.SC_NO_CONTENT, response.getStatusCodeValue());
+        assertNull(response.getBody());
+    }
+
+    @Test
+    public void should_closeSearchAfterContext_whenSearchAfterQueryParamTrue() throws Exception {
+        when(this.searchAfterFeatureManager.isEnabled()).thenReturn(false);
+
+        ResponseEntity<Void> response = this.sut.closeCursor("098F6BCD4621D373CADE4E832627B4F", true);
+
+        verify(this.searchAfterQueryService, times(1)).close("098F6BCD4621D373CADE4E832627B4F");
+        assertEquals(HttpServletResponse.SC_NO_CONTENT, response.getStatusCodeValue());
     }
 
 }

@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.PermitAll;
 import org.opengroup.osdu.core.common.model.http.AppError;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,7 +39,7 @@ public class HealthCheckApi {
   // overrides the global bearer security so the generated spec advertises `security: []`.
   @SecurityRequirements
   @PermitAll
-  @GetMapping(value = "/liveness_check", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping("/liveness_check")
   public ResponseEntity<Void> livenessCheck() {
     return ResponseEntity.ok().build();
   }
@@ -65,7 +64,7 @@ public class HealthCheckApi {
   // overrides the global bearer security so the generated spec advertises `security: []`.
   @SecurityRequirements
   @PermitAll
-  @GetMapping(value = "/readiness_check", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping("/readiness_check")
   public ResponseEntity<Void> readinessCheck() {
     return ResponseEntity.ok().build();
   }

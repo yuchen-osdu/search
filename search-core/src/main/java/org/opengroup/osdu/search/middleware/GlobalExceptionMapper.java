@@ -23,7 +23,9 @@ import javassist.NotFoundException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.elasticsearch.client.ResponseException;
+import jakarta.servlet.http.HttpServletResponse;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.search.config.SearchConfigurationProperties;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,13 +37,14 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.web.firewall.RequestRejectedException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
@@ -80,6 +83,36 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
             TypeMismatchException e, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
         return this.getErrorResponse(
                 new AppException(HttpStatus.BAD_REQUEST.value(), "Bad Request", "Invalid parameters were given on search request", e));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(
+            HttpRequestMethodNotSupportedException e,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+        return this.getErrorResponse(
+                new AppException(HttpStatus.METHOD_NOT_ALLOWED.value(), "Method not found.", "Method not found.", e));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleExceptionInternal(
+            Exception ex, Object body, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        if (request instanceof ServletWebRequest servletWebRequest) {
+            HttpServletResponse response = servletWebRequest.getResponse();
+            if (response != null && response.isCommitted()) {
+                return null;
+            }
+        }
+        if (body instanceof AppError) {
+            return new ResponseEntity<>(body, headers, status);
+        }
+        HttpStatus httpStatus = HttpStatus.resolve(status.value());
+        String reason = httpStatus != null ? httpStatus.getReasonPhrase() : "Error";
+        String message = ex.getMessage() != null ? ex.getMessage() : reason;
+        ResponseEntity<Object> mapped = this.getErrorResponse(
+                new AppException(status.value(), reason, message, ex));
+        return new ResponseEntity<>(mapped.getBody(), headers, mapped.getStatusCode());
     }
 
     @Override
@@ -123,12 +156,6 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ValidationException.class)
     protected ResponseEntity<Object> handleValidationException(ValidationException e) {
-        return this.getErrorResponse(
-                new AppException(HttpStatus.BAD_REQUEST.value(), "Bad Request", "Invalid parameters were given on search request", e));
-    }
-
-    @ExceptionHandler(RequestRejectedException.class)
-    protected ResponseEntity<Object> handleRequestRejectedException(RequestRejectedException e) {
         return this.getErrorResponse(
                 new AppException(HttpStatus.BAD_REQUEST.value(), "Bad Request", "Invalid parameters were given on search request", e));
     }

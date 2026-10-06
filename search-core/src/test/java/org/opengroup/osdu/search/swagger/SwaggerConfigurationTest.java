@@ -134,31 +134,6 @@ public class SwaggerConfigurationTest {
     }
 
     @Test
-    void alignSortQueryFieldAndOrderArraySizes_replacesSortQueryWithOneOfVariants() {
-        OpenApiCustomizer customizer = swaggerConfiguration.alignSortQueryFieldAndOrderArraySizes();
-
-        Schema<?> field = new Schema<>().type("array").items(new StringSchema().minLength(1));
-        Schema<?> order = new Schema<>().type("array").items(new StringSchema()._enum(List.of("ASC", "DESC")));
-        Schema<?> sortQuery = new Schema<>()
-                .type("object")
-                .description("Defines sort criteria.")
-                .addRequiredItem("field")
-                .addRequiredItem("order")
-                .addProperty("field", field)
-                .addProperty("order", order);
-        Map<String, Schema> schemas = new LinkedHashMap<>();
-        schemas.put("SortQuery", sortQuery);
-        OpenAPI openAPI = new OpenAPI().components(new Components().schemas(schemas));
-
-        customizer.customise(openAPI);
-
-        Schema<?> updated = openAPI.getComponents().getSchemas().get("SortQuery");
-        assertNotNull(updated);
-        assertTrue(updated instanceof ComposedSchema);
-        assertEquals(16, ((ComposedSchema) updated).getOneOf().size());
-    }
-
-    @Test
     void stripObjectTypeFromAnyOfSchemas_handlesNullSchemaAndPropertyEntries() {
         OpenApiCustomizer customizer = swaggerConfiguration.stripObjectTypeFromAnyOfSchemas();
 

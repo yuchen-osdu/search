@@ -28,6 +28,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.search.config.SearchConfigurationProperties;
 import org.springframework.http.HttpHeaders;
@@ -35,13 +36,16 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.web.firewall.RequestRejectedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.method.ParameterValidationResult;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -135,15 +139,6 @@ public class GlobalExceptionMapperTest {
         ValidationException exception = new ValidationException();
 
         ResponseEntity<Object> response = sut.handleValidationException(exception);
-        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode().value());
-    }
-
-    @Test
-    public void should_useBadRequestInResponse_When_handleRequestRejectedExceptionIsHandledByGlobalExceptionMapper() {
-        RequestRejectedException exception = new RequestRejectedException(
-                "The request was rejected because the header has a value that is not allowed.");
-
-        ResponseEntity<Object> response = sut.handleRequestRejectedException(exception);
         assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode().value());
     }
 
@@ -281,5 +276,57 @@ public class GlobalExceptionMapperTest {
         sut.handleAppException(appException);
 
         verify(log).error(anyString(), any(ResponseException.class));
+    }
+
+    @Test
+    public void should_use405ValueInResponse_When_HttpRequestMethodNotSupported() {
+        HttpRequestMethodNotSupportedException exception = new HttpRequestMethodNotSupportedException("TRACE");
+
+        ResponseEntity<Object> response = sut.handleHttpRequestMethodNotSupported(
+                exception, new HttpHeaders(), HttpStatusCode.valueOf(HttpStatus.SC_METHOD_NOT_ALLOWED), mock(WebRequest.class));
+
+        assertEquals(HttpStatus.SC_METHOD_NOT_ALLOWED, response.getStatusCode().value());
+        assertInstanceOf(AppError.class, response.getBody());
+        assertEquals("Method not found.", ((AppError) response.getBody()).getReason());
+    }
+
+    @Test
+    public void should_mapUnhandledMvcErrorsToAppError_When_handleExceptionInternal() {
+        Exception exception = new Exception("No acceptable representation");
+
+        ResponseEntity<Object> response = sut.handleExceptionInternal(
+                exception, null, new HttpHeaders(), HttpStatusCode.valueOf(HttpStatus.SC_NOT_ACCEPTABLE), mock(WebRequest.class));
+
+        assertEquals(HttpStatus.SC_NOT_ACCEPTABLE, response.getStatusCode().value());
+        assertInstanceOf(AppError.class, response.getBody());
+        AppError error = (AppError) response.getBody();
+        assertEquals("Not Acceptable", error.getReason());
+        assertEquals("No acceptable representation", error.getMessage());
+    }
+
+    @Test
+    public void should_passThroughAppErrorBody_When_handleExceptionInternal() {
+        AppError existing = new AppError(415, "Unsupported Media Type", "application/xml not supported");
+
+        ResponseEntity<Object> response = sut.handleExceptionInternal(
+                new Exception("ignored"), existing, new HttpHeaders(),
+                HttpStatusCode.valueOf(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE), mock(WebRequest.class));
+
+        assertEquals(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, response.getStatusCode().value());
+        assertSame(existing, response.getBody());
+    }
+
+    @Test
+    public void should_returnNull_When_handleExceptionInternalAndResponseAlreadyCommitted() {
+        ServletWebRequest request = mock(ServletWebRequest.class);
+        HttpServletResponse servletResponse = mock(HttpServletResponse.class);
+        when(request.getResponse()).thenReturn(servletResponse);
+        when(servletResponse.isCommitted()).thenReturn(true);
+
+        ResponseEntity<Object> response = sut.handleExceptionInternal(
+                new Exception("too late"), null, new HttpHeaders(),
+                HttpStatusCode.valueOf(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE), request);
+
+        assertNull(response);
     }
 }

@@ -1,10 +1,11 @@
 """Schemathesis hooks for the search-service API-contract gate.
 
-``blend_query_kind_and_spatial_bodies`` blends known-good ``kind`` / ``spatialFilter`` values
-into POST ``/query*`` generation (avoids ``filter_too_much`` on 4.22.4).
+``blend_query_kind_and_spatial_bodies`` blends known-good ``kind`` / ``spatialFilter`` /
+aligned ``sort`` values into POST ``/query*`` generation (avoids ``filter_too_much`` on 4.22.4).
 
-``normalize_query_kind_and_cursor_case`` dedupes ``kind`` lists and drops body ``cursor`` on
-``POST /query_with_cursor`` (first-page only).
+``normalize_query_kind_and_cursor_case`` dedupes ``kind`` lists, drops body ``cursor`` on
+``POST /query_with_cursor`` (first-page only), and keeps ``sort.field`` / ``sort.order``
+the same length (OpenAPI cannot express that sibling-array constraint).
 
 Loaded via ``hooks = "./hooks/hooks.py"`` in ``schemathesis.toml``.
 """
@@ -50,6 +51,12 @@ SPATIAL_FILTER_SAMPLES = (
     },
 )
 
+# field and order must be the same length (SortOrderValidator); max 16 is not enforced at runtime.
+SORT_SAMPLES = (
+    {"field": ["id"], "order": ["ASC"]},
+    {"field": ["id", "kind"], "order": ["ASC", "DESC"]},
+)
+
 PREDEFINED_BODIES = st.one_of(
     st.fixed_dictionaries({"kind": KIND_STRATEGY}),
     st.fixed_dictionaries(
@@ -58,7 +65,35 @@ PREDEFINED_BODIES = st.one_of(
             "spatialFilter": st.sampled_from(SPATIAL_FILTER_SAMPLES),
         }
     ),
+    st.fixed_dictionaries(
+        {
+            "kind": KIND_STRATEGY,
+            "sort": st.sampled_from(SORT_SAMPLES),
+        }
+    ),
 )
+
+
+def _align_sort_field_and_order(body: dict) -> None:
+    sort = body.get("sort")
+    if not isinstance(sort, dict):
+        return
+
+    field = sort.get("field")
+    order = sort.get("order")
+    if not isinstance(field, list) or not isinstance(order, list):
+        return
+
+    size = min(len(field), len(order))
+    if size == 0:
+        body.pop("sort", None)
+        return
+
+    sort["field"] = field[:size]
+    sort["order"] = order[:size]
+    filt = sort.get("filter")
+    if isinstance(filt, list):
+        sort["filter"] = filt[:size]
 
 
 @schemathesis.hook("before_generate_body")
@@ -86,5 +121,8 @@ def normalize_query_kind_and_cursor_case(context, case):
 
     if case.method.upper() == "POST" and case.path == "/query_with_cursor":
         body.pop("cursor", None)
+
+    if case.method.upper() == "POST" and case.path in POST_QUERY_PATHS:
+        _align_sort_field_and_order(body)
 
     return case

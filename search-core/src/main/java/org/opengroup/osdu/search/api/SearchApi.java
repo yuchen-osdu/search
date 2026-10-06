@@ -119,7 +119,7 @@ public class SearchApi {
     @Operation(summary = "${searchApi.closePaginationQueryWithCursor.summary}", description = "${searchApi.closePaginationQueryWithCursor.description}",
             security = {@SecurityRequirement(name = "Authorization")}, tags = { "search-api" })
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Success", content = { @Content(schema = @Schema(implementation = CursorQueryResponse.class)) }),
+            @ApiResponse(responseCode = "204", description = "No Content — cursor closed, or no-op when search-after is not in use", content = @Content),
             @ApiResponse(responseCode = "400", description = "Invalid parameters were given on request", content = {@Content(schema = @Schema(implementation = AppError.class))}),
             @ApiResponse(responseCode = "401", description = "Unauthorized",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
             @ApiResponse(responseCode = "403", description = "User not authorized to perform the action",  content = {@Content(schema = @Schema(implementation = AppError.class))}),
@@ -130,16 +130,16 @@ public class SearchApi {
     })
     @DeleteMapping("/query_with_cursor/{cursor}")
     @PreAuthorize("@authorizationFilter.hasPermission('" + SearchServiceRole.ADMIN + "', '" + SearchServiceRole.USER + "')")
-    public ResponseEntity<CursorQueryResponse> closeCursor(
+    public ResponseEntity<Void> closeCursor(
             @Parameter(description = "Cursor value returned by a previous query_with_cursor response.",
                     schema = @Schema(type = "string", pattern = ValidationDoc.CURSOR_PATTERN,
                             minLength = ValidationDoc.CURSOR_LENGTH, maxLength = ValidationDoc.CURSOR_LENGTH,
                             example = SwaggerDoc.CURSOR_EXAMPLE))
             @Pattern(regexp = ValidationDoc.CURSOR_PATTERN) @NotNull @PathVariable(value = "cursor") String cursor,
-                            @Parameter(description = "If true, close a search-after pagination context instead of a scroll context.") @RequestParam(value="search_after", required = false, defaultValue = "false") boolean search_after) throws Exception {
+                            @Parameter(description = "If true, close a search-after pagination context. When false (the default) and the search-after feature flag is off, the request returns 204 and does nothing; scroll contexts are not closed.") @RequestParam(value="search_after", required = false, defaultValue = "false") boolean search_after) throws Exception {
         if(searchAfterFeatureManager.isEnabled() || search_after) {
             searchAfterQueryService.close(cursor);
         }
-        return new ResponseEntity<>(CursorQueryResponse.getEmptyResponse(), HttpStatus.OK);
+        return ResponseEntity.noContent().build();
     }
 }
