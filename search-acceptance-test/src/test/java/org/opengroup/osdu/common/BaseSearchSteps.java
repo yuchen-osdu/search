@@ -119,18 +119,20 @@ public class BaseSearchSteps {
 
     public static void setupSuiteLegalTag() {
         suiteLegalTagName = Config.getDataPartitionIdTenant1() + "-search-" + System.currentTimeMillis();
+        // Create body must match Legal CreateLegalTag (name, description, properties only).
+        // Gson omits nulls; sending isValid/id makes CIMPL legal return 400 "Failed to read request".
         LegalTagProperties properties = new LegalTagProperties(
             "A1234",
-            "Default",
+            "MyCompany",
             List.of(OTHER_RELEVANT_DATA_COUNTRY),
             "Public",
             "EAR99",
             "No Personal Data",
-            "2099-01-25",
+            "2099-12-25",
             "Public Domain Data");
         LegalTag legalTag = new LegalTag(
             null,
-            true,
+            null,
             suiteLegalTagName,
             properties,
             "Legal tag for search acceptance tests");
