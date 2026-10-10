@@ -2,9 +2,7 @@ package org.opengroup.osdu.common;
 
 import com.google.gson.Gson;
 
-import java.util.List;
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
 
 import org.opengroup.osdu.core.common.model.search.SortQuery;
 import org.opengroup.osdu.request.CursorQuery;
@@ -45,6 +43,24 @@ public class QueryByCursorBase extends TestsBase {
     public void i_send_with(String query, String kind) {
         requestQuery.setQuery(query);
         requestQuery.setKind(generateActualName(kind, timeStamp));
+    }
+
+    public void i_send_a_subsequent_request_with_only_the_kind_and_cursor() {
+        requestQuery = nextPageRequest();
+    }
+
+    public void i_send_a_subsequent_request_with_the_cursor_limit_and_fields(int limit, List<String> returnedFields) {
+        CursorQuery nextPageRequest = nextPageRequest();
+        nextPageRequest.setLimit(limit);
+        nextPageRequest.setReturnedFields(returnedFields);
+        requestQuery = nextPageRequest;
+    }
+
+    private CursorQuery nextPageRequest() {
+        CursorQuery nextPageRequest = new CursorQuery();
+        nextPageRequest.setKind(requestQuery.getKind());
+        nextPageRequest.setCursor(requestQuery.getCursor());
+        return nextPageRequest;
     }
 
     public void i_set_the_fields_I_want_in_response_as(List<String> returnedFileds) {
@@ -136,6 +152,26 @@ public class QueryByCursorBase extends TestsBase {
         requestQuery.setCursor(response.getCursor());
     }
 
+    public void i_should_get_in_response_records_containing_only_fields(int resultCount, List<String> fields) {
+        String payload = requestQuery.toString();
+        ResponseMock response = executeQuery(payload, headers, httpClient.getAccessToken(), ResponseMock.class);
+        assertEquals(200, response.getResponseCode());
+        assertEquals(resultCount, response.getResults().size());
+
+        for (Map<String, Object> result : response.getResults()) {
+            Set<String> actualFieldPaths = flattenFieldPaths("", result);
+            for (String expectedField : fields) {
+                assertTrue("Expected field missing: " + expectedField,
+                        Utility.containsField(result, expectedField));
+            }
+            for (String actualField : actualFieldPaths) {
+                assertTrue("Unexpected field in response: " + actualField
+                                + " — the effective returnedFields were not honored",
+                        fields.stream().anyMatch(f -> actualField.equals(f) || actualField.startsWith(f + ".")));
+            }
+        }
+    }
+
     public void i_sort_with(String sortJson) {
         SortQuery sortArg = (new Gson()).fromJson(sortJson, SortQuery.class);
         requestQuery.setSort(sortArg);
@@ -159,5 +195,18 @@ public class QueryByCursorBase extends TestsBase {
 
     public void i_set_an_invalid_cursor() {
         requestQuery.setCursor("invalid cursor");
+    }
+
+    private Set<String> flattenFieldPaths(String prefix, Map<String, Object> map) {
+        Set<String> paths = new HashSet<>();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            String path = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
+            if (entry.getValue() instanceof Map) {
+                paths.addAll(flattenFieldPaths(path, (Map<String, Object>) entry.getValue()));
+            } else {
+                paths.add(path);
+            }
+        }
+        return paths;
     }
 }
