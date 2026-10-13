@@ -12,7 +12,11 @@ variables:
   AZURE_SERVICE: search
   AZURE_BUILD_SUBDIR: provider/search-azure
   AZURE_TEST_SUBDIR: testing/search-test-azure
-  SERVICE_JAVA_VERSION: "17"
+  # Full Docker Hub tag after "maven:" — flip to ...-temurin-25 for Java 25 compile/test.
+  # Keep in sync with SERVICE_JAVA_VERSION (plugin-download jobs).
+  # Dependency scanning: SBOM early-mover (sbom-maven.yml); do not set DS_JAVA_VERSION: "25".
+  MAVEN_IMAGE_TAG: "3.9.16-eclipse-temurin-25"
+  SERVICE_JAVA_VERSION: "3.9.16-eclipse-temurin-25"
   ACCEPTANCE_TEST_DIR: "search-acceptance-test"
 
   CIMPL_OPENAPI_CONFIG_ROUTE: /api/search/v2/api-docs/swagger-config
@@ -32,6 +36,9 @@ include:
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/gitlab-ultimate.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "scanners/sbom-maven.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "reporting/reporting.yml"
@@ -61,13 +68,20 @@ include:
 
   - local: "devops/gc/pipeline/override-stages.yml"
 
+# Java 25 FOSSA image (divido/fossa-with-cache!19). Shared fossa-maven.yml still
+# defaults to v0.10 (JDK 17); override until ci-cd-pipelines bumps the default.
+fossa-analyze:
+  image: $CI_REGISTRY/divido/fossa-with-cache:v0.11
+
+fossa-check-notice:
+  image: $CI_REGISTRY/divido/fossa-with-cache:v0.11
 
 download_plugins:
-  image: maven:3.8.3-openjdk-17-slim
+  image: maven:${SERVICE_JAVA_VERSION}
   stage: build
   variables:
     APD_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1445/packages/maven"
-    APD_VERSION: "0.26.0"
+    APD_VERSION: "1.0.0"
 
   artifacts:
     paths:

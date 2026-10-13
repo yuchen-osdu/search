@@ -194,7 +194,9 @@ public class QueryByCursorBase extends TestsBase {
     }
 
     public void i_set_an_invalid_cursor() {
-        requestQuery.setCursor("invalid cursor");
+        // Must match CursorQueryRequest @Pattern ^[0-9A-F]{32}$ so Bean Validation
+        // does not short-circuit before the service returns "Can't find the given cursor".
+        requestQuery.setCursor("00000000000000000000000000000000");
     }
 
     private Set<String> flattenFieldPaths(String prefix, Map<String, Object> map) {
