@@ -129,7 +129,9 @@ public class QueryByCursorSteps extends BaseSearchSteps {
 
     @When("^I set an invalid cursor$")
     public void i_set_an_invalid_cursor() {
-        // Format-valid (32 uppercase hex chars) but not a real scroll/search-after cursor
+        // Format-valid (32 uppercase hex chars) but not a real scroll/search-after cursor.
+        // Must match CursorQueryRequest @Pattern ^[0-9A-F]{32}$ so Bean Validation
+        // does not short-circuit before the service returns "Can't find the given cursor".
         requestQuery.setCursor("00000000000000000000000000000000");
     }
 

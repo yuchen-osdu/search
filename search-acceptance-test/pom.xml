@@ -10,12 +10,14 @@
     <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
-        <os-core-common.version>8.2.0</os-core-common.version>
-        <os-core-test.version>0.2.10</os-core-test.version>
+        <java.version>25</java.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+        <os-core-common.version>9.3.0</os-core-common.version>
+        <os-core-test.version>1.1.0</os-core-test.version>
+        <junit.version>5.14.4</junit.version>
         <lombok.version>1.18.46</lombok.version>
-        <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
-        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <argLine>
             --add-opens=java.base/java.util=ALL-UNNAMED
             --add-opens=java.base/java.lang=ALL-UNNAMED
@@ -27,7 +29,27 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- os-core-test pins 7.1.0; keep acceptance tests on the same os-core-common as search-service -->
+            <!--
+                cucumber-junit-platform-engine (from os-core-test) requires JUnit Platform 1.14.x.
+                Importing junit-bom here keeps the standalone module aligned with os-core-test.
+            -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!--
+                commons-configuration2 (from os-core-test) needs ObjectUtils.getIfNull from
+                commons-lang3 >= 3.15.0. Pin so transitive resolution cannot pick an older one.
+            -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.20.0</version>
+            </dependency>
+            <!-- os-core-test 1.1.0 pins 9.1.0; keep acceptance tests on the same os-core-common as search-service -->
             <dependency>
                 <groupId>org.opengroup.osdu</groupId>
                 <artifactId>os-core-common</artifactId>
