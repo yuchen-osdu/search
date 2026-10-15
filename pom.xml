@@ -29,7 +29,7 @@
         <skip.unit.tests>false</skip.unit.tests>
         <skip.integration.tests>true</skip.integration.tests>
         <resteasy-jaxrs.version>4.0.0.Beta5</resteasy-jaxrs.version>
-        <resteasy-jackson2.version>6.2.9.Final</resteasy-jackson2.version>
+        <resteasy-jackson2.version>6.2.16.Final</resteasy-jackson2.version>
         <snakeyaml.version>2.0</snakeyaml.version>
         <woodstox-core.version>5.3.0</woodstox-core.version>
         <reactor-bom.version>2023.0.6</reactor-bom.version>
