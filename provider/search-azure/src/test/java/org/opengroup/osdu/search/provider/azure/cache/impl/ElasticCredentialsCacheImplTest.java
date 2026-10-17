@@ -7,7 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
-import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.cache.IRedisCache;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.search.ClusterSettings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +33,7 @@ public class ElasticCredentialsCacheImplTest {
 
     @Mock
     @Resource(name = "clusterCache")
-    private ICache<String, ClusterSettings> cache;
+    private IRedisCache<String, ClusterSettings> cache;
 
     @Mock
     @Autowired
@@ -120,10 +120,10 @@ public class ElasticCredentialsCacheImplTest {
     public void should_invoke_clearAll_elasticCredentialsCacheMethod_when_clearAll_cache_isCalled() {
         ClusterSettings cursorSettings = ClusterSettings.builder().build();
         AtomicReference<Boolean> methodCalled = new AtomicReference<>(false);
-        doAnswer((Answer<Boolean>) invocation -> {
+        doAnswer((Answer<Long>) invocation -> {
             methodCalled.set(true);
-            return null;
-        }).when(cache).clearAll();
+            return 0L;
+        }).when(cache).deleteByPattern("*");
 
         sut.clearAll();
 

@@ -20,7 +20,6 @@ import co.elastic.clients.elasticsearch.core.*;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import co.elastic.clients.elasticsearch.core.search.TotalHits;
-import com.google.common.collect.Lists;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.ContentTooLongException;
 import org.junit.jupiter.api.Test;
@@ -38,6 +37,9 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.search.CursorQueryRequest;
 import org.opengroup.osdu.core.common.model.search.CursorQueryResponse;
+import org.opengroup.osdu.core.common.model.search.Query;
+import org.opengroup.osdu.core.common.model.search.SortOrder;
+import org.opengroup.osdu.core.common.model.search.SortQuery;
 import org.opengroup.osdu.search.cache.SearchAfterSettingsCache;
 import org.opengroup.osdu.search.config.ElasticLoggingConfig;
 import org.opengroup.osdu.search.context.UserContext;
@@ -65,6 +67,7 @@ public class SearchAfterQueryServiceImplTest {
     private static final String userId = "userId";
     private static final String name = "name";
     private static final String text = "text";
+    private static final String kind = "osdu:test:kind:1.0.0";
 
     @Mock
     private SearchAfterSettings cursorSettings;
@@ -98,6 +101,8 @@ public class SearchAfterQueryServiceImplTest {
 
     @Mock
     private CrossTenantUtils crossTenantUtils;
+    @Mock
+    private IQueryParserUtil queryParserUtil;
     @Mock
     private SuggestionsQueryUtil suggestionsQueryUtil;
     @Mock
@@ -136,12 +141,19 @@ public class SearchAfterQueryServiceImplTest {
         String pitId = "pitId";
         long totalHitsCount = 1L;
 
-        CursorQueryRequest cursorQueryRequest = mock(CursorQueryRequest.class);
+        CursorQueryRequest cachedRequest = new CursorQueryRequest();
+        cachedRequest.setKind(kind);
+        cachedRequest.setLimit(10);
+
+        CursorQueryRequest cursorQueryRequest = new CursorQueryRequest();
+        cursorQueryRequest.setKind(kind);
+        cursorQueryRequest.setCursor(cursor);
+
         SearchResponse searchResponse = mock(SearchResponse.class);
         doReturn(pitId).when(cursorSettings).getPitId();
         doReturn(userId).when(cursorSettings).getUserId();
         doReturn(totalHitsCount).when(cursorSettings).getTotalCount();
-        doReturn(cursor).when(cursorQueryRequest).getCursor();
+        doReturn(cachedRequest).when(cursorSettings).getCachedQuery();
         doReturn(searchResponse).when(client).search(any(SearchRequest.class), eq((Type)Map.class));
         doReturn(searchHits).when(searchResponse).hits();
         doReturn(pitId).when(searchResponse).pitId();
@@ -155,6 +167,7 @@ public class SearchAfterQueryServiceImplTest {
         // assert
         ArgumentCaptor<SearchRequest> searchRequestArgumentCaptor = ArgumentCaptor.forClass(SearchRequest.class);
         ArgumentCaptor<String> cursorArgumentCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Query> loggedQueryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(client).search(searchRequestArgumentCaptor.capture(), eq((Type)Map.class));
         verify(cursorCache).get(cursorArgumentCaptor.capture());
         SearchRequest searchRequest = searchRequestArgumentCaptor.getValue();
@@ -165,8 +178,270 @@ public class SearchAfterQueryServiceImplTest {
         assertEquals(obtainedQueryResponse.getTotalCount(), totalHitsCount);
         assertEquals(searchRequest.pit().id(), pitId);
         assertEquals(searchRequestCursor, cursor);
-        verify(this.auditLogger, times(1)).queryIndexWithCursorSuccess(Lists.newArrayList(cursorQueryRequest.toString()));
-        verify(this.perfLogger, times(1)).log(eq(cursorQueryRequest), anyLong(), eq(200));
+        verify(this.auditLogger, times(1)).queryIndexWithCursorSuccess(anyList());
+        verify(this.perfLogger, times(1)).log(loggedQueryCaptor.capture(), anyLong(), eq(200));
+        // the executed (merged) query is the one reported, carrying the cursor of the incoming request
+        assertEquals(cursor, ((CursorQueryRequest) loggedQueryCaptor.getValue()).getCursor());
+        assertEquals(10, loggedQueryCaptor.getValue().getLimit());
+    }
+
+    @Test
+    public void testQueryIndex_fallsBackToCachedQueryLimitAndReturnedFields_whenNotResent() throws Exception {
+        List<Hit<Map<String, Object>>> hits = new ArrayList<>();
+        hits.add(searchHit);
+        Map<String, Object> hitFields = new HashMap<>();
+        String cursor = "cursor";
+        String pitId = "pitId";
+
+        // Cached original (page-1) request: the values that should actually be honored
+        CursorQueryRequest cachedRequest = new CursorQueryRequest();
+        cachedRequest.setKind("osdu:test:kind:1.0.0");
+        cachedRequest.setLimit(1);
+        cachedRequest.setReturnedFields(List.of("kind", "id"));
+
+        // Page-2 request per documented contract: minimal, no limit/fields resent
+        CursorQueryRequest incomingRequest = new CursorQueryRequest();
+        incomingRequest.setKind("osdu:test:kind:1.0.0");
+        incomingRequest.setCursor(cursor);
+
+        SearchResponse searchResponse = mock(SearchResponse.class);
+        doReturn(pitId).when(cursorSettings).getPitId();
+        doReturn(userId).when(cursorSettings).getUserId();
+        doReturn(1L).when(cursorSettings).getTotalCount();
+        doReturn(cachedRequest).when(cursorSettings).getCachedQuery();
+        doReturn(searchResponse).when(client).search(any(SearchRequest.class), eq((Type) Map.class));
+        doReturn(searchHits).when(searchResponse).hits();
+        doReturn(pitId).when(searchResponse).pitId();
+        doReturn(hits).when(searchHits).hits();
+        doReturn(new HashMap<>()).when(searchHit).highlight();
+        doReturn(hitFields).when(searchHit).source();
+
+        sut.queryIndex(incomingRequest);
+
+        ArgumentCaptor<SearchRequest> requestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+        verify(client).search(requestCaptor.capture(), eq((Type) Map.class));
+        SearchRequest builtRequest = requestCaptor.getValue();
+
+        assertEquals(1, builtRequest.size());
+        assertTrue(builtRequest.source().filter().includes().contains("kind"));
+        assertTrue(builtRequest.source().filter().includes().contains("id"));
+    }
+
+    @Test
+    public void testQueryIndex_leavesCachedQueryUntouched_andCarriesCursorOnExecutedQuery() throws Exception {
+        List<Hit<Map<String, Object>>> hits = new ArrayList<>();
+        hits.add(searchHit);
+        Map<String, Object> hitFields = new HashMap<>();
+        String cursor = "cursor";
+        String pitId = "pitId";
+
+        CursorQueryRequest incomingRequest = new CursorQueryRequest();
+        incomingRequest.setKind(kind);
+        incomingRequest.setCursor(cursor);
+
+        CursorQueryRequest cachedRequest = new CursorQueryRequest();
+        cachedRequest.setKind(kind);
+        cachedRequest.setCursor(null);
+
+        SearchResponse searchResponse = mock(SearchResponse.class);
+        doReturn(pitId).when(cursorSettings).getPitId();
+        doReturn(userId).when(cursorSettings).getUserId();
+        doReturn(1L).when(cursorSettings).getTotalCount();
+        doReturn(cachedRequest).when(cursorSettings).getCachedQuery();
+        doReturn(searchResponse).when(client).search(any(SearchRequest.class), eq((Type) Map.class));
+        doReturn(searchHits).when(searchResponse).hits();
+        doReturn(pitId).when(searchResponse).pitId();
+        doReturn(hits).when(searchHits).hits();
+        doReturn(new HashMap<>()).when(searchHit).highlight();
+        doReturn(hitFields).when(searchHit).source();
+
+        sut.queryIndex(incomingRequest);
+
+        // the cached page-1 request is never mutated in place, it is merged into a fresh request
+        assertNull(cachedRequest.getCursor());
+        assertEquals(cursor, captureCarriedForwardQuery().getCursor());
+    }
+
+    @Test
+    public void testQueryIndex_appliesLimitAndReturnedFieldsOverridesFromSubsequentRequest() throws Exception {
+        List<Hit<Map<String, Object>>> hits = new ArrayList<>();
+        hits.add(searchHit);
+        Map<String, Object> hitFields = new HashMap<>();
+        String cursor = "cursor";
+        String pitId = "pitId";
+
+        // Page-1 request captured with the cursor
+        CursorQueryRequest cachedRequest = new CursorQueryRequest();
+        cachedRequest.setKind(kind);
+        cachedRequest.setLimit(1);
+        cachedRequest.setReturnedFields(List.of("kind", "id"));
+        cachedRequest.setExcludedFields(List.of("data.rawData"));
+
+        // Page-2 request changing limit and returnedFields
+        CursorQueryRequest incomingRequest = new CursorQueryRequest();
+        incomingRequest.setKind(kind);
+        incomingRequest.setCursor(cursor);
+        incomingRequest.setLimit(5);
+        incomingRequest.setReturnedFields(List.of("data.wellName"));
+
+        SearchResponse searchResponse = mock(SearchResponse.class);
+        doReturn(pitId).when(cursorSettings).getPitId();
+        doReturn(userId).when(cursorSettings).getUserId();
+        doReturn(1L).when(cursorSettings).getTotalCount();
+        doReturn(cachedRequest).when(cursorSettings).getCachedQuery();
+        doReturn(searchResponse).when(client).search(any(SearchRequest.class), eq((Type) Map.class));
+        doReturn(searchHits).when(searchResponse).hits();
+        doReturn(pitId).when(searchResponse).pitId();
+        doReturn(hits).when(searchHits).hits();
+        doReturn(new HashMap<>()).when(searchHit).highlight();
+        doReturn(hitFields).when(searchHit).source();
+
+        sut.queryIndex(incomingRequest);
+
+        ArgumentCaptor<SearchRequest> requestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+        verify(client).search(requestCaptor.capture(), eq((Type) Map.class));
+        SearchRequest builtRequest = requestCaptor.getValue();
+
+        assertEquals(5, builtRequest.size());
+        assertEquals(List.of("data.wellName"), builtRequest.source().filter().includes());
+        assertFalse(builtRequest.source().filter().includes().contains("kind"));
+        // fields that were not resent still fall back to the cached request
+        assertTrue(builtRequest.source().filter().excludes().contains("data.rawData"));
+    }
+
+    @Test
+    public void testQueryIndex_overridesAreCarriedForwardToTheNextPage() throws Exception {
+        List<Hit<Map<String, Object>>> hits = new ArrayList<>();
+        hits.add(searchHit);
+        Map<String, Object> hitFields = new HashMap<>();
+        String cursor = "cursor";
+        String pitId = "pitId";
+
+        SortQuery cachedSort = new SortQuery();
+        cachedSort.setField(List.of("id"));
+        cachedSort.setOrder(List.of(SortOrder.ASC));
+
+        CursorQueryRequest cachedRequest = new CursorQueryRequest();
+        cachedRequest.setKind(kind);
+        cachedRequest.setLimit(1);
+        cachedRequest.setQuery("data.Country:\\\"US\\\"");
+        cachedRequest.setSort(cachedSort);
+
+        SortQuery changedSort = new SortQuery();
+        changedSort.setField(List.of("kind"));
+        changedSort.setOrder(List.of(SortOrder.DESC));
+
+        CursorQueryRequest incomingRequest = new CursorQueryRequest();
+        incomingRequest.setKind("osdu:other:kind:1.0.0");
+        incomingRequest.setCursor(cursor);
+        incomingRequest.setLimit(5);
+        incomingRequest.setSort(changedSort);
+
+        SearchResponse searchResponse = mock(SearchResponse.class);
+        doReturn(pitId).when(cursorSettings).getPitId();
+        doReturn(userId).when(cursorSettings).getUserId();
+        doReturn(1L).when(cursorSettings).getTotalCount();
+        doReturn(cachedRequest).when(cursorSettings).getCachedQuery();
+        doReturn(searchResponse).when(client).search(any(SearchRequest.class), eq((Type) Map.class));
+        doReturn(searchHits).when(searchResponse).hits();
+        doReturn(pitId).when(searchResponse).pitId();
+        doReturn(hits).when(searchHits).hits();
+        doReturn(new HashMap<>()).when(searchHit).highlight();
+        doReturn(hitFields).when(searchHit).source();
+
+        sut.queryIndex(incomingRequest);
+
+        CursorQueryRequest carriedForward = captureCarriedForwardQuery();
+        assertEquals(5, carriedForward.getLimit());
+        assertEquals(cachedRequest.getQuery(), carriedForward.getQuery());
+        assertEquals(kind, carriedForward.getKind());
+        assertEquals(cachedSort, carriedForward.getSort());
+        assertFalse(carriedForward.isTrackTotalCount());
+    }
+
+    @Test
+    public void testQueryIndex_whenSearchFails_leavesTheCursorQueryUntouched() throws Exception {
+        String cursor = "cursor";
+
+        CursorQueryRequest cachedRequest = new CursorQueryRequest();
+        cachedRequest.setKind(kind);
+        cachedRequest.setLimit(1);
+        cachedRequest.setReturnedFields(List.of("id"));
+
+        CursorQueryRequest incomingRequest = new CursorQueryRequest();
+        incomingRequest.setKind(kind);
+        incomingRequest.setCursor(cursor);
+        incomingRequest.setLimit(5);
+        incomingRequest.setReturnedFields(List.of("data.wellName"));
+
+        doReturn("pitId").when(cursorSettings).getPitId();
+        doReturn(userId).when(cursorSettings).getUserId();
+        doReturn(cachedRequest).when(cursorSettings).getCachedQuery();
+        doThrow(new AppException(500, reason, message)).when(client).search(any(SearchRequest.class), eq((Type) Map.class));
+
+        assertThrows(AppException.class, () -> sut.queryIndex(incomingRequest));
+
+        // the overrides of the failed page are not carried over to the retry of the same cursor
+        verify(cursorSettings, never()).setCachedQuery(any());
+        assertEquals(1, cachedRequest.getLimit());
+        assertEquals(List.of("id"), cachedRequest.getReturnedFields());
+    }
+
+    @Test
+    public void testQueryIndex_whenSearchHitsIsEmpty_deletesCacheUnderOriginalCursor() throws Exception {
+        List<Hit<Map<String, Object>>> hits = new ArrayList<>();
+        String cursor = "cursor";
+        String pitId = "pitId";
+
+        CursorQueryRequest incomingRequest = new CursorQueryRequest();
+        incomingRequest.setKind("osdu:test:kind:1.0.0");
+        incomingRequest.setCursor(cursor);
+
+        CursorQueryRequest cachedRequest = new CursorQueryRequest();
+        cachedRequest.setKind("osdu:test:kind:1.0.0");
+        cachedRequest.setCursor(null);
+
+        SearchResponse searchResponse = mock(SearchResponse.class);
+        doReturn(pitId).when(cursorSettings).getPitId();
+        doReturn(userId).when(cursorSettings).getUserId();
+        doReturn(0L).when(cursorSettings).getTotalCount();
+        doReturn(cachedRequest).when(cursorSettings).getCachedQuery();
+        doReturn(searchResponse).when(client).search(any(SearchRequest.class), eq((Type) Map.class));
+        doReturn(searchHits).when(searchResponse).hits();
+        doReturn(hits).when(searchHits).hits();
+
+        sut.queryIndex(incomingRequest);
+
+        verify(cursorCache, times(1)).delete(eq(cursor));
+    }
+
+    @Test
+    public void testQueryIndex_resetsTrackTotalCount_afterCachingOnNoCursorPath() throws Exception {
+        List<Hit<Map<String, Object>>> hits = new ArrayList<>();
+        hits.add(searchHit);
+        Map<String, Object> hitFields = new HashMap<>();
+        String pitId = "pitId";
+
+        CursorQueryRequest request = new CursorQueryRequest();
+        request.setKind("osdu:test:kind:1.0.0");
+        request.setCursor(null);
+
+        OpenPointInTimeResponse openPitResponse = mock(OpenPointInTimeResponse.class);
+        SearchResponse searchResponse = mock(SearchResponse.class);
+        TotalHits totalHits = mock(TotalHits.class);
+        doReturn(searchHits).when(searchResponse).hits();
+        doReturn(hits).when(searchHits).hits();
+        doReturn(new HashMap<>()).when(searchHit).highlight();
+        doReturn(hitFields).when(searchHit).source();
+        doReturn(totalHits).when(searchHits).total();
+        doReturn(1L).when(totalHits).value();
+        doReturn(openPitResponse).when(client).openPointInTime(any(OpenPointInTimeRequest.class));
+        doReturn(pitId).when(openPitResponse).id();
+        doReturn(searchResponse).when(client).search(any(SearchRequest.class), eq((Type) Map.class));
+
+        sut.queryIndex(request);
+
+        assertFalse(request.isTrackTotalCount());
     }
 
     @Test
@@ -181,6 +456,7 @@ public class SearchAfterQueryServiceImplTest {
         doReturn(pitId).when(cursorSettings).getPitId();
         doReturn(userId).when(cursorSettings).getUserId();
         doReturn(totalHitsCount).when(cursorSettings).getTotalCount();
+        doReturn(cursorQueryRequest).when(cursorSettings).getCachedQuery();
         doReturn(cursor).when(cursorQueryRequest).getCursor();
         doReturn(searchResponse).when(client).search(any(SearchRequest.class), eq((Type)Map.class));
         doReturn(searchHits).when(searchResponse).hits();
@@ -304,6 +580,7 @@ public class SearchAfterQueryServiceImplTest {
         doReturn("cursor").when(cursorQueryRequest).getCursor();
         doReturn("cursor").when(cursorSettings).getPitId();
         doReturn(userId).when(cursorSettings).getUserId();
+        doReturn(cursorQueryRequest).when(cursorSettings).getCachedQuery();
         ElasticsearchException exception = mock(ElasticsearchException.class);
         doReturn(HttpServletResponse.SC_NOT_FOUND).when(exception).status();
         doReturn("No search context found for id [47500324]").when(exception).getMessage();
@@ -314,9 +591,9 @@ public class SearchAfterQueryServiceImplTest {
         } catch (AppException e) {
             int errorCode = 400;
             AppError error = e.getError();
-            assertEquals(error.getReason(), "Can't find the given cursor");
-            assertEquals(error.getMessage(), "The given cursor is invalid or expired");
-            assertEquals(error.getCode(), errorCode);
+            assertEquals("Can't find the given cursor", error.getReason());
+            assertEquals("The given cursor is invalid or expired", error.getMessage());
+            assertEquals(errorCode, error.getCode());
         }
     }
 
@@ -326,6 +603,7 @@ public class SearchAfterQueryServiceImplTest {
         doReturn("cursor").when(cursorQueryRequest).getCursor();
         doReturn("cursor").when(cursorSettings).getPitId();
         doReturn(userId).when(cursorSettings).getUserId();
+        doReturn(cursorQueryRequest).when(cursorSettings).getCachedQuery();
         IOException exception = mock(IOException.class);
         doReturn(new ContentTooLongException(null)).when(exception).getCause();
 
@@ -428,5 +706,11 @@ public class SearchAfterQueryServiceImplTest {
         Map<String, List<String>> highlightFields = new HashMap<>();
         highlightFields.put(name, List.of(text));
         return highlightFields;
+    }
+
+    private CursorQueryRequest captureCarriedForwardQuery() {
+        ArgumentCaptor<CursorQueryRequest> cachedQueryCaptor = ArgumentCaptor.forClass(CursorQueryRequest.class);
+        verify(cursorSettings).setCachedQuery(cachedQueryCaptor.capture());
+        return cachedQueryCaptor.getValue();
     }
 }
