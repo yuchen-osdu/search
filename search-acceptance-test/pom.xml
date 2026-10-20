@@ -12,7 +12,7 @@
     <properties>
         <java.version>25</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
-        <os-core-test.version>1.1.0</os-core-test.version>
+        <os-core-test.version>1.2.1</os-core-test.version>
         <junit.version>5.14.4</junit.version>
         <lombok.version>1.18.46</lombok.version>
         <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
