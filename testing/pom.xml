@@ -43,7 +43,7 @@
 		<java.version>25</java.version>
 		<maven.compiler.release>${java.version}</maven.compiler.release>
 		<jackson.version>2.21.2</jackson.version>
-		<os-core-common.version>trusted-fix-cursor-example-length-SNAPSHOT</os-core-common.version>
+		<os-core-common.version>9.3.1</os-core-common.version>
 		<lombok.version>1.18.42</lombok.version>
 		<maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
 	</properties>
