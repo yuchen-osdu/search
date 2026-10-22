@@ -267,7 +267,7 @@ paths:
         required: true
         schema:
           type: string
-          example: 098F6BCD4621D373CADE4E832627B4F
+          example: 098F6BCD4621D373CADE4E832627B4F6
           maxLength: 32
           minLength: 32
           pattern: "^[0-9A-F]{32}$"
@@ -626,7 +626,7 @@ components:
           - "null"
           description: Search context to retrieve the next page of results. Null when
             there are no more results.
-          example: 098F6BCD4621D373CADE4E832627B4F
+          example: 098F6BCD4621D373CADE4E832627B4F6
           maxLength: 32
           minLength: 32
           pattern: "^[0-9A-F]{32}$"
@@ -708,7 +708,7 @@ components:
           - "null"
           description: Search context to retrieve the next page of results. Null when
             there are no more results.
-          example: 098F6BCD4621D373CADE4E832627B4F
+          example: 098F6BCD4621D373CADE4E832627B4F6
           maxLength: 32
           minLength: 32
           pattern: "^[0-9A-F]{32}$"
