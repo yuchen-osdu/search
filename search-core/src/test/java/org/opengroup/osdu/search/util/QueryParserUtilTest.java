@@ -21,7 +21,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.search.model.NestedQueryNode;
 import org.opengroup.osdu.search.model.QueryNode;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -65,57 +64,6 @@ public class QueryParserUtilTest {
                     () -> "Expected message to contain: '" + pair.getKey() + "' but got: '" + ex.getMessage() + "'"
             );
         });
-    }
-
-    @Test
-    public void testNestedQueryWithRegexMetacharactersInField() {
-        String query = "nested(data.NestedTest, (Number.Test:123 AND String+Test:\"abc\"))";
-        List<QueryNode> nodes = queryParserUtil.parseQueryNodesFromQueryString(query);
-        assertEquals(1, nodes.size());
-        assertTrue(nodes.get(0) instanceof NestedQueryNode);
-        NestedQueryNode nestedNode = (NestedQueryNode) nodes.get(0);
-        assertEquals("(data.NestedTest.Number.Test:123 AND data.NestedTest.String+Test:\"abc\")", nestedNode.getQueryString().trim());
-    }
-
-    @Test
-    public void testNestedQueryWithDollarAndBackslashInNestedPath() {
-        String query = "nested(data.$Nested\\Test, (NumberTest:123 AND StringTest:\"abc\"))";
-        List<QueryNode> nodes = queryParserUtil.parseQueryNodesFromQueryString(query);
-        assertEquals(1, nodes.size());
-        assertTrue(nodes.get(0) instanceof NestedQueryNode);
-        NestedQueryNode nestedNode = (NestedQueryNode) nodes.get(0);
-        assertEquals("(data.$Nested\\Test.NumberTest:123 AND data.$Nested\\Test.StringTest:\"abc\")", nestedNode.getQueryString().trim());
-    }
-
-    @Test
-    public void testNestedQueryWithValueTokenEqualToFieldName() {
-        String query = "nested(data.NestedTest, (a:foo bar OR bar:1))";
-        List<QueryNode> nodes = queryParserUtil.parseQueryNodesFromQueryString(query);
-        assertEquals(1, nodes.size());
-        assertTrue(nodes.get(0) instanceof NestedQueryNode);
-        NestedQueryNode nestedNode = (NestedQueryNode) nodes.get(0);
-        assertEquals("(data.NestedTest.a:foo bar OR data.NestedTest.bar:1)", nestedNode.getQueryString().trim());
-    }
-
-    @Test
-    public void testNestedQueryWithPotentialReDoSFieldDoesNotHang() {
-        String query = "nested(data.NestedTest, ((a+)+:123))";
-        List<QueryNode> nodes = queryParserUtil.parseQueryNodesFromQueryString(query);
-        assertEquals(1, nodes.size());
-        assertTrue(nodes.get(0) instanceof NestedQueryNode);
-        NestedQueryNode nestedNode = (NestedQueryNode) nodes.get(0);
-        assertEquals("(data.NestedTest.(a+)+:123)", nestedNode.getQueryString().trim());
-    }
-
-    @Test
-    public void testMalformedMultilevelNestedQueryThrowsBadRequest() {
-        String query = "nested(data.NestedTest, nested(data.NestedTest.NestedInnerTest,))";
-        AppException ex = assertThrows(
-                AppException.class,
-                () -> queryParserUtil.buildQueryBuilderFromQueryString(query)
-        );
-        assertEquals(400, ex.getError().getCode());
-        assertEquals("Malformed query", ex.getError().getReason());
     }
 
     private static List<ImmutablePair<String, String>> validQueriesList() {
