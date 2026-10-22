@@ -48,7 +48,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -77,7 +76,6 @@ public class SearchAfterQueryServiceImpl extends CoreQueryBase implements ISearc
     private ISortParserUtil sortParserUtil;
 
     private final Time SEARCH_AFTER_TIMEOUT = Time.of(t -> t.time("90s"));
-    private final MessageDigest digest;
     private final JsonpMapper mapper;
     private static final List<OverridableField<?>> OVERRIDABLE_FIELDS = List.of(
             new OverridableField<>(Query::getLimit, limit -> limit > 0, Query::setLimit),
@@ -89,8 +87,7 @@ public class SearchAfterQueryServiceImpl extends CoreQueryBase implements ISearc
             new OverridableField<>(Query::getSpatialFilter, Objects::nonNull, Query::setSpatialFilter),
             new OverridableField<>(Query::isQueryAsOwner, Boolean.TRUE::equals, Query::setQueryAsOwner));
 
-    public SearchAfterQueryServiceImpl() throws NoSuchAlgorithmException {
-        this.digest = MessageDigest.getInstance("MD5");
+    public SearchAfterQueryServiceImpl() {
         this.mapper = new JacksonJsonpMapper();
     }
 
@@ -374,8 +371,9 @@ public class SearchAfterQueryServiceImpl extends CoreQueryBase implements ISearc
     String refreshCursorCache(SearchResponse<Map<String, Object>> searchResponse, boolean isCursorClosed, SearchAfterSettings cursorSettings) {
         String pitId = searchResponse.pitId();
         if (pitId != null) {
-            this.digest.update(pitId.getBytes());
-            String hashCursor = DatatypeConverter.printHexBinary(this.digest.digest()).toUpperCase();
+            MessageDigest digest = getDigest();
+            digest.update(pitId.getBytes());
+            String hashCursor = DatatypeConverter.printHexBinary(digest.digest()).toUpperCase();
             List<FieldValue> searchAfterValues;
             HitsMetadata<Map<String, Object>> searchHits = searchResponse.hits();
             if (searchHits.hits() != null && !searchHits.hits().isEmpty()) {

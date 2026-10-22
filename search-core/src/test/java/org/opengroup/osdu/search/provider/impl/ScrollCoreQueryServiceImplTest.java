@@ -39,6 +39,12 @@ import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.ContentTooLongException;
@@ -369,6 +375,41 @@ public class ScrollCoreQueryServiceImplTest {
     public void refreshCursorCache_rawCursorNull() {
         String cursor = sut.refreshCursorCache(null, userId);
         assertNull(cursor);
+    }
+
+    @Test
+    public void refreshCursorCache_concurrentCalls_produceUniqueDigests() throws Exception {
+        int threadCount = 10;
+        int iterationsPerThread = 50;
+        int totalCalls = threadCount * iterationsPerThread;
+        Set<String> cursorHashes = ConcurrentHashMap.newKeySet();
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch latch = new CountDownLatch(1);
+        List<Future<?>> futures = new ArrayList<>();
+
+        for (int i = 0; i < threadCount; i++) {
+            final int threadId = i;
+            futures.add(executor.submit(() -> {
+                try {
+                    latch.await();
+                    for (int j = 0; j < iterationsPerThread; j++) {
+                        String inputCursor = "rawCursor-" + threadId + "-" + j;
+                        String hash = sut.refreshCursorCache(inputCursor, userId);
+                        cursorHashes.add(hash);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }));
+        }
+
+        latch.countDown();
+        for (Future<?> future : futures) {
+            future.get(10, TimeUnit.SECONDS);
+        }
+        executor.shutdown();
+
+        assertEquals(totalCalls, cursorHashes.size());
     }
 
     @Test

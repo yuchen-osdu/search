@@ -35,6 +35,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.SocketTimeoutException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
@@ -450,6 +452,14 @@ abstract class CoreQueryBase {
 
   private boolean userHasFullDataAccess() {
     return userContext.isRootUser();
+  }
+
+  MessageDigest getDigest() {
+    try {
+      return MessageDigest.getInstance("MD5");
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   <T> void processBuckets(

@@ -32,7 +32,6 @@ import jakarta.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
 import org.apache.http.ContentTooLongException;
@@ -61,12 +60,6 @@ public class ScrollCoreQueryServiceImpl extends CoreQueryBase implements IScroll
   @Inject private AuditLogger auditLogger;
   @Autowired private ResponseExceptionParser exceptionParser;
   @Autowired private IQueryPerformanceLogger tracingLogger;
-
-  private final MessageDigest digest;
-
-  public ScrollCoreQueryServiceImpl() throws NoSuchAlgorithmException {
-    this.digest = MessageDigest.getInstance("MD5");
-  }
 
   @Override
   public CursorQueryResponse queryIndex(CursorQueryRequest searchRequest) throws Exception {
@@ -229,8 +222,9 @@ public class ScrollCoreQueryServiceImpl extends CoreQueryBase implements IScroll
 
   String refreshCursorCache(String rawCursor, String userId) {
     if (rawCursor != null) {
-      this.digest.update(rawCursor.getBytes());
-      String hashCursor = DatatypeConverter.printHexBinary(this.digest.digest()).toUpperCase();
+      MessageDigest digest = getDigest();
+      digest.update(rawCursor.getBytes());
+      String hashCursor = DatatypeConverter.printHexBinary(digest.digest()).toUpperCase();
       this.cursorCache.put(
           hashCursor, CursorSettings.builder().cursor(rawCursor).userId(userId).build());
       return hashCursor;
