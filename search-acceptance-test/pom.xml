@@ -12,6 +12,7 @@
     <properties>
         <java.version>25</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
+        <os-core-common.version>9.3.1</os-core-common.version>
         <os-core-test.version>1.2.1</os-core-test.version>
         <junit.version>5.14.4</junit.version>
         <lombok.version>1.18.46</lombok.version>
@@ -47,6 +48,12 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>3.20.0</version>
+            </dependency>
+            <!-- Keep acceptance tests on the same os-core-common as search-service -->
+            <dependency>
+                <groupId>org.opengroup.osdu</groupId>
+                <artifactId>os-core-common</artifactId>
+                <version>${os-core-common.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

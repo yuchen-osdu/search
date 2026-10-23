@@ -40,10 +40,10 @@
 
 	<properties>
 		<revision>0.31.0-SNAPSHOT</revision>
-		<java.version>17</java.version>
+		<java.version>25</java.version>
 		<maven.compiler.release>${java.version}</maven.compiler.release>
 		<jackson.version>2.21.2</jackson.version>
-		<os-core-common.version>7.1.0</os-core-common.version>
+		<os-core-common.version>9.3.1</os-core-common.version>
 		<lombok.version>1.18.42</lombok.version>
 		<maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
 	</properties>
@@ -76,7 +76,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.13.0</version>
+					<version>3.15.0</version>
 					<configuration>
 						<annotationProcessorPaths>
 							<path>

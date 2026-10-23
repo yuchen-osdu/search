@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.validation.ValidationException;
 import javassist.NotFoundException;
 import org.apache.http.HttpStatus;
-import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +28,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.search.config.SearchConfigurationProperties;
 import org.springframework.http.HttpHeaders;
@@ -38,8 +38,14 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.method.ParameterValidationResult;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -175,6 +181,27 @@ public class GlobalExceptionMapperTest {
     }
 
     @Test
+    public void should_returnBadRequest_whenHandlerMethodValidationFails() {
+        HandlerMethodValidationException exception = mock(HandlerMethodValidationException.class);
+        ParameterValidationResult validationResult = mock(ParameterValidationResult.class);
+        FieldError fieldError = new FieldError("searchApi", "cursor", "must not be null");
+
+        when(exception.getAllValidationResults()).thenReturn(List.of(validationResult));
+        when(validationResult.getResolvableErrors()).thenReturn(List.of(fieldError));
+
+        ResponseEntity<Object> response = sut.handleHandlerMethodValidationException(
+                exception, new HttpHeaders(), HttpStatusCode.valueOf(400), mock(WebRequest.class));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode().value());
+        assertInstanceOf(ObjectNode.class, response.getBody());
+        ObjectNode body = (ObjectNode) response.getBody();
+        assertEquals(400, body.get("code").asInt());
+        assertEquals("Bad Request", body.get("reason").asText());
+        assertTrue(body.has("errors"));
+    }
+
+    @Test
     public void should_returnBadRequest_whenMethodArgumentNotValid() {
         MethodArgumentNotValidException exception = mock(MethodArgumentNotValidException.class);
         BindingResult bindingResult = mock(BindingResult.class);
@@ -249,5 +276,57 @@ public class GlobalExceptionMapperTest {
         sut.handleAppException(appException);
 
         verify(log).error(anyString(), any(ResponseException.class));
+    }
+
+    @Test
+    public void should_use405ValueInResponse_When_HttpRequestMethodNotSupported() {
+        HttpRequestMethodNotSupportedException exception = new HttpRequestMethodNotSupportedException("TRACE");
+
+        ResponseEntity<Object> response = sut.handleHttpRequestMethodNotSupported(
+                exception, new HttpHeaders(), HttpStatusCode.valueOf(HttpStatus.SC_METHOD_NOT_ALLOWED), mock(WebRequest.class));
+
+        assertEquals(HttpStatus.SC_METHOD_NOT_ALLOWED, response.getStatusCode().value());
+        assertInstanceOf(AppError.class, response.getBody());
+        assertEquals("Method not found.", ((AppError) response.getBody()).getReason());
+    }
+
+    @Test
+    public void should_mapUnhandledMvcErrorsToAppError_When_handleExceptionInternal() {
+        Exception exception = new Exception("No acceptable representation");
+
+        ResponseEntity<Object> response = sut.handleExceptionInternal(
+                exception, null, new HttpHeaders(), HttpStatusCode.valueOf(HttpStatus.SC_NOT_ACCEPTABLE), mock(WebRequest.class));
+
+        assertEquals(HttpStatus.SC_NOT_ACCEPTABLE, response.getStatusCode().value());
+        assertInstanceOf(AppError.class, response.getBody());
+        AppError error = (AppError) response.getBody();
+        assertEquals("Not Acceptable", error.getReason());
+        assertEquals("No acceptable representation", error.getMessage());
+    }
+
+    @Test
+    public void should_passThroughAppErrorBody_When_handleExceptionInternal() {
+        AppError existing = new AppError(415, "Unsupported Media Type", "application/xml not supported");
+
+        ResponseEntity<Object> response = sut.handleExceptionInternal(
+                new Exception("ignored"), existing, new HttpHeaders(),
+                HttpStatusCode.valueOf(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE), mock(WebRequest.class));
+
+        assertEquals(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, response.getStatusCode().value());
+        assertSame(existing, response.getBody());
+    }
+
+    @Test
+    public void should_returnNull_When_handleExceptionInternalAndResponseAlreadyCommitted() {
+        ServletWebRequest request = mock(ServletWebRequest.class);
+        HttpServletResponse servletResponse = mock(HttpServletResponse.class);
+        when(request.getResponse()).thenReturn(servletResponse);
+        when(servletResponse.isCommitted()).thenReturn(true);
+
+        ResponseEntity<Object> response = sut.handleExceptionInternal(
+                new Exception("too late"), null, new HttpHeaders(),
+                HttpStatusCode.valueOf(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE), request);
+
+        assertNull(response);
     }
 }

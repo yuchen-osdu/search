@@ -190,15 +190,12 @@ paths:
       tags:
       - health-check-api
       summary: Readiness Check endpoint
-      description: For deployment available public `/readiness_check` endpoint.
+      description: Public `/readiness_check` endpoint. Returns HTTP 200 with an empty
+        body and no Content-Type constraint.
       operationId: readinessCheck
       responses:
         "200":
           description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
         "502":
           description: Bad Gateway
           content:
@@ -217,15 +214,12 @@ paths:
       tags:
       - health-check-api
       summary: Liveness Check endpoint
-      description: For deployment available public `/liveness_check` endpoint.
+      description: Public `/liveness_check` endpoint. Returns HTTP 200 with an empty
+        body and no Content-Type constraint.
       operationId: livenessCheck
       responses:
         "200":
           description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
         "502":
           description: Bad Gateway
           content:
@@ -260,9 +254,11 @@ paths:
       tags:
       - search-api
       summary: Closes a cursor-based pagination context.
-      description: "Releases server-side resources held by the cursor. \nRequired\
-        \ roles: `users.datalake.viewers` or `users.datalake.editors` or `users.datalake.admins`\
-        \ or `users.datalake.ops`."
+      description: "Releases server-side resources held by a search-after pagination\
+        \ cursor and returns HTTP 204 with no body. When `search_after` is false and\
+        \ the search-after feature flag is off, this call is a no-op (scroll contexts\
+        \ are not closed). \nRequired roles: `users.datalake.viewers` or `users.datalake.editors`\
+        \ or `users.datalake.admins` or `users.datalake.ops`."
       operationId: closeCursor
       parameters:
       - name: cursor
@@ -271,11 +267,15 @@ paths:
         required: true
         schema:
           type: string
-          pattern: "^[A-Za-z0-9=_-]+$"
+          example: 098F6BCD4621D373CADE4E832627B4F6
+          maxLength: 32
+          minLength: 32
+          pattern: "^[0-9A-F]{32}$"
       - name: search_after
         in: query
-        description: "If true, close a search-after pagination context instead of\
-          \ a scroll context."
+        description: "If true, close a search-after pagination context. When false\
+          \ (the default) and the search-after feature flag is off, the request returns\
+          \ 204 and does nothing; scroll contexts are not closed."
         required: false
         schema:
           type: boolean
@@ -288,12 +288,9 @@ paths:
           type: string
           minLength: 1
       responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CursorQueryResponse"
+        "204":
+          description: "No Content — cursor closed, or no-op when search-after is\
+            \ not in use"
         "400":
           description: Invalid parameters were given on request
           content:
@@ -616,7 +613,6 @@ components:
             \ than 10000."
           example: false
         spatialFilter:
-          type: object
           description: A spatial filter to apply.
           oneOf:
           - $ref: "#/components/schemas/ByBoundingBoxOnly"
@@ -630,7 +626,7 @@ components:
           - "null"
           description: Search context to retrieve the next page of results. Null when
             there are no more results.
-          example: 098F6BCD4621D373CADE4E832627B4F
+          example: 098F6BCD4621D373CADE4E832627B4F6
           maxLength: 32
           minLength: 32
           pattern: "^[0-9A-F]{32}$"
@@ -712,7 +708,7 @@ components:
           - "null"
           description: Search context to retrieve the next page of results. Null when
             there are no more results.
-          example: 098F6BCD4621D373CADE4E832627B4F
+          example: 098F6BCD4621D373CADE4E832627B4F6
           maxLength: 32
           minLength: 32
           pattern: "^[0-9A-F]{32}$"
@@ -824,7 +820,6 @@ components:
             \ than 10000."
           example: false
         spatialFilter:
-          type: object
           description: A spatial filter to apply.
           oneOf:
           - $ref: "#/components/schemas/ByBoundingBoxOnly"
