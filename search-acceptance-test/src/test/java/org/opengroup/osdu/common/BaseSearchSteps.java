@@ -156,28 +156,36 @@ public class BaseSearchSteps {
             || !SHARED_SCHEMA_CLIENT.getTrackedIds().isEmpty();
     }
 
-    protected void waitForSearchIndex(String kind) {
+    /**
+     * Polls search until at least {@code expectedCount} records of the kind are visible.
+     * Search only returns records of the collaboration namespace given by the x-collaboration
+     * header (or records outside any namespace when it is absent), so the probe must carry the
+     * same header the records were ingested with.
+     */
+    protected void waitForSearchIndex(String kind, long expectedCount, String xCollaborationHeader) {
         String resolvedKind = generateActualName(kind);
         QueryRequest request = new QueryRequest();
         request.setKind(resolvedKind);
-        Map<String, String> probeHeaders = Map.of(
-            DpsHeaders.DATA_PARTITION_ID, getTenantMapping("tenant1"));
+        Map<String, String> probeHeaders = new HashMap<>();
+        probeHeaders.put(DpsHeaders.DATA_PARTITION_ID, getTenantMapping("tenant1"));
+        if (xCollaborationHeader != null && !xCollaborationHeader.isEmpty()) {
+            probeHeaders.put(DpsHeaders.COLLABORATION, xCollaborationHeader);
+        }
         int maxAttempts = Config.getSearchIndexWaitMaxAttempts();
         int intervalSeconds = Config.getSearchIndexWaitIntervalSeconds();
         log.info(
-            "Probing search index for kind '{}' (resolved='{}'), maxAttempts={}, intervalSeconds={}",
-            kind, resolvedKind, maxAttempts, intervalSeconds);
+            "Probing search index for kind '{}' (resolved='{}'), expectedCount={}, xCollaboration='{}', "
+                + "maxAttempts={}, intervalSeconds={}",
+            kind, resolvedKind, expectedCount, xCollaborationHeader, maxAttempts, intervalSeconds);
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
             int attemptNumber = attempt + 1;
             try {
                 HttpResponse<QueryResponse> response = searchClient().query(request, probeHeaders);
-                int resultCount = response.body() == null || response.body().getResults() == null
-                    ? 0
-                    : response.body().getResults().size();
+                long resultCount = response.body() == null ? 0 : response.body().getTotalCount();
                 log.debug(
                     "Search index probe attempt {}/{} response for kind '{}' (resolved='{}'): {}",
                     attemptNumber, maxAttempts, kind, resolvedKind, formatResponseBody(response.body()));
-                if (response.statusCode() == HttpStatus.SC_OK && resultCount > 0) {
+                if (response.statusCode() == HttpStatus.SC_OK && resultCount >= expectedCount) {
                     log.info(
                         "Search index ready for kind '{}' (resolved='{}') after {} probe attempt(s), resultCount={}",
                         kind, resolvedKind, attemptNumber, resultCount);
@@ -207,8 +215,9 @@ public class BaseSearchSteps {
             }
         }
         String message = String.format(
-            "Search index not ready for kind '%s' (resolved='%s') after %d probe attempt(s)",
-            kind, resolvedKind, maxAttempts);
+            "Search index not ready for kind '%s' (resolved='%s', expectedCount=%d, xCollaboration='%s') "
+                + "after %d probe attempt(s)",
+            kind, resolvedKind, expectedCount, xCollaborationHeader, maxAttempts);
         log.warn(message);
         throw new AssertionError(message);
     }
@@ -490,7 +499,7 @@ public class BaseSearchSteps {
             logResponse(response);
             assertEquals(HttpStatus.SC_CREATED, response.statusCode());
             trackIngestedResources(storageRecords, response, actualKind);
-            waitForSearchIndex(kind);
+            waitForSearchIndex(kind, storageRecords.length, xCollaborationHeader);
         } catch (Exception ex) {
             throw new AssertionError(ex.getMessage());
         }
