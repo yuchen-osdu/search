@@ -90,6 +90,9 @@ public class SwaggerConfiguration {
                         .description("Tenant Id")
                         .in("header")
                         .required(true)
+                        // minLength(1): an empty data-partition-id is rejected with 400 by
+                        // AuthorizationFilter, so it is not a schema-compliant value. Documenting
+                        // this stops contract fuzzers from generating "" and expecting acceptance.
                         .schema(new StringSchema().minLength(1));
                 return operation.addParametersItem(dataPartitionId);
             }
@@ -107,6 +110,8 @@ public class SwaggerConfiguration {
         return QueryWithCursorOpenApiCustomizer::apply;
     }
 
+    // Springdoc may emit `type: object` together with `anyOf`/`oneOf` for composed properties,
+    // which can misrepresent union fields in generated OpenAPI clients; clear the type in this case.
     @Bean
     public OpenApiCustomizer stripObjectTypeFromAnyOfSchemas() {
         return openApi -> {
@@ -123,10 +128,18 @@ public class SwaggerConfiguration {
                     if (!(property instanceof Schema<?> propertySchema)) {
                         continue;
                     }
+                    // For a Java `Object` field annotated with `anyOf` (e.g. os-core-common
+                    // Query.kind = single kind string OR array of kinds), swagger-core emits
+                    // `type: object` alongside the `anyOf` — an unsatisfiable schema, since no value
+                    // is both an object and one of the anyOf branches. Drop the stray type so the
+                    // union is valid.
                     if ((propertySchema.getAnyOf() == null || propertySchema.getAnyOf().isEmpty())
                             && (propertySchema.getOneOf() == null || propertySchema.getOneOf().isEmpty())) {
                         continue;
                     }
+                    // OpenAPI 3.0 holds the type in the singular `type` field; OpenAPI 3.1 (what
+                    // springdoc actually serves) holds it in the `types` Set. Clear `object` in BOTH
+                    // representations, otherwise the strip is a no-op against the served 3.1 spec.
                     if ("object".equals(propertySchema.getType())) {
                         propertySchema.setType(null);
                     }
