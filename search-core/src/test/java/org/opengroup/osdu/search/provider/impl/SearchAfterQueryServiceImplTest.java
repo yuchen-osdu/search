@@ -31,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -53,6 +54,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -110,7 +112,7 @@ public class SearchAfterQueryServiceImplTest {
     @Mock
     private ResponseExceptionParser exceptionParser;
     @Mock
-    public IFeatureFlag collaborationFeatureFlag;
+    private CollaborationContextFactory collaborationContextFactory;
     @InjectMocks
     private SearchAfterQueryServiceImpl sut;
 
@@ -128,6 +130,7 @@ public class SearchAfterQueryServiceImplTest {
         Mockito.lenient().doReturn(client).when(elasticClientHandler).getOrCreateRestClient();
         Mockito.lenient().when(elasticLoggingConfig.getEnabled()).thenReturn(false);
         Mockito.lenient().when(elasticLoggingConfig.getThreshold()).thenReturn(200L);
+        Mockito.lenient().when(collaborationContextFactory.create(any())).thenReturn(Optional.empty());
         Mockito.lenient().when(userContext.isRootUser()).thenReturn(false);
     }
 

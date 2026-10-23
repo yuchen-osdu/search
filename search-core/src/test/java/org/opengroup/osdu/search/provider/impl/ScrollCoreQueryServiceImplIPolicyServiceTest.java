@@ -42,6 +42,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.search.CursorQueryRequest;
@@ -121,11 +122,15 @@ public class ScrollCoreQueryServiceImplIPolicyServiceTest {
   @Mock
   public IFeatureFlag iFeatureFlag;
 
+  @Mock
+  private CollaborationContextFactory collaborationContextFactory;
+
   @BeforeEach
   public void setup() {
     MockitoAnnotations.openMocks(this);
 
-	lenient().when(iFeatureFlag.isFeatureEnabled(anyString())).thenReturn(false);
+    lenient().when(iFeatureFlag.isFeatureEnabled(anyString())).thenReturn(false);
+    lenient().when(collaborationContextFactory.create(any())).thenReturn(Optional.empty());
 
 	when(elasticLoggingConfig.getEnabled()).thenReturn(false);
     when(elasticLoggingConfig.getThreshold()).thenReturn(200L);
@@ -213,8 +218,77 @@ public class ScrollCoreQueryServiceImplIPolicyServiceTest {
 		when(crossTenantUtils.getIndexName(Mockito.any()))
 				.thenReturn(index);
 
-    String jsonString =
-        "{\"_source\":{\"excludes\":[\"x-acl\",\"index\"],\"includes\":[]},\"highlight\":{\"fields\":{}},\"query\":{\"bool\":{\"boost\":1.0, \"must\":[{\"bool\":{\"must\":[{\"query_string\":{\"boost\":1.0,\"allow_leading_wildcard\":false,\"auto_generate_synonyms_phrase_query\":true,\"default_operator\":\"or\",\"enable_position_increments\":true,\"escape\":false,\"fields\":[],\"fuzziness\":\"AUTO\",\"fuzzy_max_expansions\":50,\"fuzzy_prefix_length\":0,\"fuzzy_transpositions\":true,\"max_determinized_states\":10000,\"phrase_slop\":0.0,\"query\":\"data.ID:\\\"EPSG::1078\\\"\",\"type\":\"best_fields\"}}]}},{\"wrapper\":{\"query\":\"UG9saWN5U3RyaW5n\"}}]}},\"size\":10,\"sort\":[{\"_score\":{\"order\":\"desc\"}},{\"_doc\":{\"order\":\"asc\"}}],\"timeout\":\"1m\"}";
+
+		String jsonString = """
+		{
+		  "_source": {
+			"excludes": ["x-acl", "index"],
+			"includes": []
+		  },
+		  "highlight": {
+			"fields": {}
+		  },
+		  "query": {
+			"bool": {
+			  "boost": 1.0,
+			  "must": [
+				{
+				  "bool": {
+					"must": [
+					  {
+						"query_string": {
+						  "boost": 1.0,
+						  "allow_leading_wildcard": false,
+						  "auto_generate_synonyms_phrase_query": true,
+						  "default_operator": "or",
+						  "enable_position_increments": true,
+						  "escape": false,
+						  "fields": [],
+						  "fuzziness": "AUTO",
+						  "fuzzy_max_expansions": 50,
+						  "fuzzy_prefix_length": 0,
+						  "fuzzy_transpositions": true,
+						  "max_determinized_states": 10000,
+						  "phrase_slop": 0.0,
+						  "query": "data.ID:\\"EPSG::1078\\"",
+						  "type": "best_fields"
+						}
+					  }
+					]
+				  }
+				},
+				{
+				  "wrapper": {
+					"query": "UG9saWN5U3RyaW5n"
+				  }
+				}
+			  ],
+			  "must_not": [
+				{
+				  "exists": {
+					"boost": 1.0,
+					"field": "collaborationId"
+				  }
+				}
+			  ]
+			}
+		  },
+		  "size": 10,
+		  "sort": [
+			{
+			  "_score": {
+				"order": "desc"
+			  }
+			},
+			{
+			  "_doc": {
+				"order": "asc"
+			  }
+			}
+		  ],
+		  "timeout": "1m"
+		}
+		""";
 		SearchRequest searchRequest = SearchRequest.of(s -> s
 				.withJson(new StringReader(jsonString))
 		);

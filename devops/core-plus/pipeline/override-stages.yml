@@ -8,14 +8,14 @@ variables:
 cimpl-dev-acceptance-test:
   variables:
     DEFAULT_DATA_PARTITION_ID_TENANT2: non-exist
-    CUCUMBER_OPTIONS: "@default or @health or @SpatialLongitudeStandardRange"
+    CUCUMBER_OPTIONS: "@default or @health or @SpatialLongitudeStandardRange or @xcollab"
 
 cimpl-dev-backup-acceptance-test:
   variables:
     DEFAULT_DATA_PARTITION_ID_TENANT2: non-exist
-    CUCUMBER_OPTIONS: "@default or @health or @SpatialLongitudeStandardRange"
+    CUCUMBER_OPTIONS: "@default or @health or @SpatialLongitudeStandardRange or @xcollab"
 
 cimpl-prod-acceptance-test:
   variables:
     DEFAULT_DATA_PARTITION_ID_TENANT2: non-exist
-    CUCUMBER_OPTIONS: "@default or @health or @SpatialLongitudeStandardRange"
+    CUCUMBER_OPTIONS: "@default or @health or @SpatialLongitudeStandardRange or @xcollab"

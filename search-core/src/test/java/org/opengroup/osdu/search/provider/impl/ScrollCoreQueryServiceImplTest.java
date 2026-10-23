@@ -38,10 +38,7 @@ import co.elastic.clients.elasticsearch.core.search.TotalHits;
 import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.ContentTooLongException;
@@ -54,6 +51,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -117,8 +115,6 @@ public class ScrollCoreQueryServiceImplTest {
     private ElasticLoggingConfig elasticLoggingConfig;
     @Mock
     private ResponseExceptionParser exceptionParser;
-    @Mock
-    public IFeatureFlag collaborationFeatureFlag;
     @InjectMocks
     private ScrollCoreQueryServiceImpl sut;
 
@@ -128,6 +124,9 @@ public class ScrollCoreQueryServiceImplTest {
     @Mock
     private UserContext userContext;
 
+    @Mock
+    private CollaborationContextFactory collaborationContextFactory;
+
     @BeforeEach
     public void init() {
         Mockito.lenient().doReturn(userId).when(dpsHeaders).getUserEmail();
@@ -136,6 +135,7 @@ public class ScrollCoreQueryServiceImplTest {
         Mockito.lenient().doReturn(client).when(elasticClientHandler).getOrCreateRestClient();
         Mockito.lenient().when(elasticLoggingConfig.getEnabled()).thenReturn(false);
         Mockito.lenient().when(elasticLoggingConfig.getThreshold()).thenReturn(200L);
+        Mockito.lenient().when(collaborationContextFactory.create(any())).thenReturn(Optional.empty());
     }
 
     @Test
