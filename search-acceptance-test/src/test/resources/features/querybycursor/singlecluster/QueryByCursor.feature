@@ -60,6 +60,22 @@ Feature: Search recursively on cursor with different queries
       | "tenant1" | "tenant1" | "tenant1:search<timestamp>:*:*" | "\"OFFICE2\" \| OFFICE3 \| OFFICE5" | 1     | All             | 1           | 1           |
 
   @default
+  Scenario Outline: Subsequent cursor-only requests honor parameters from the initial request
+    When I send <query> with <kind>
+    And I limit the count of returned results to <limit>
+    And I set the fields I want in response as <returned_fields>
+    And I send request to tenant <tenant>
+    Then I should get in response <first_count> records along with a cursor
+    When I send a subsequent request with only the kind and cursor
+    And I send request to tenant <tenant>
+    Then I should get in response <final_count> records with exactly <returned_fields>
+
+    Examples:
+      | tenant    | kind                            | query | limit | returned_fields | first_count | final_count |
+      | "tenant1" | "tenant1:search<timestamp>:*:*" | None  | 4     | id              | 4           | 2           |
+      | "tenant1" | "tenant1:search<timestamp>:*:*" | None  | 3     | id,kind         | 3           | 3           |
+
+  @default
   Scenario Outline: Search recursively page by page data across the kinds with invalid inputs
     When I send <query> with <kind>
     And I limit the count of returned results to <limit>

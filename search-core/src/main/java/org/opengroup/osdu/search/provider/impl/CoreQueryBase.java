@@ -18,7 +18,6 @@
 
 package org.opengroup.osdu.search.provider.impl;
 
-import static org.opengroup.osdu.core.common.Constants.COLLABORATIONS_FEATURE_NAME;
 import static org.opengroup.osdu.core.common.model.search.RecordMetaAttribute.COLLABORATION_ID;
 import static org.opengroup.osdu.search.config.SearchConfigurationProperties.POLICY_FEATURE_NAME;
 
@@ -111,21 +110,20 @@ abstract class CoreQueryBase {
       }
     }
 
-    if (featureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
-      Optional<CollaborationContext> collaborationContext =
-          collaborationContextFactory.create(dpsHeaders.getCollaboration());
-      if (collaborationContext.isPresent()) {
-        TermQuery.Builder termQueryBuilder =
-            QueryBuilders.term()
-                .field(COLLABORATION_ID.getValue())
-                .value(collaborationContext.get().getId())
-                .boost(1.0F);
-        queryBuilder.must(termQueryBuilder.build()._toQuery()).boost(1.0F);
-      } else {
-        ExistsQuery.Builder existsQueryBuilder =
-            QueryBuilders.exists().field(COLLABORATION_ID.getValue()).boost(1.0F);
-        queryBuilder.mustNot(existsQueryBuilder.build()._toQuery()).boost(1.0F);
-      }
+    // Handle x-collaboration header - always enabled by default
+    Optional<CollaborationContext> collaborationContext =
+        collaborationContextFactory.create(dpsHeaders.getCollaboration());
+    if (collaborationContext.isPresent()) {
+      TermQuery.Builder termQueryBuilder =
+          QueryBuilders.term()
+              .field(COLLABORATION_ID.getValue())
+              .value(collaborationContext.get().getId())
+              .boost(1.0F);
+      queryBuilder.must(termQueryBuilder.build()._toQuery()).boost(1.0F);
+    } else {
+      ExistsQuery.Builder existsQueryBuilder =
+          QueryBuilders.exists().field(COLLABORATION_ID.getValue()).boost(1.0F);
+      queryBuilder.mustNot(existsQueryBuilder.build()._toQuery()).boost(1.0F);
     }
 
     if (featureFlag.isFeatureEnabled(POLICY_FEATURE_NAME)) {

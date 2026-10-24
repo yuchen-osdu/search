@@ -7,7 +7,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.cache.IRedisCache;
 import org.opengroup.osdu.core.common.model.search.CursorSettings;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.annotation.Resource;
 import java.util.concurrent.atomic.AtomicReference;
@@ -15,6 +17,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class CursorCacheImplTest {
@@ -92,5 +97,17 @@ public class CursorCacheImplTest {
         sut.clearAll();
 
         assertTrue(methodCalled.get());
+    }
+
+    @Test
+    public void should_invoke_deleteByPattern_when_clearAll_cacheIsRedis() {
+        @SuppressWarnings("unchecked")
+        IRedisCache<String, CursorSettings> redisCache = mock(IRedisCache.class);
+        ReflectionTestUtils.setField(sut, "cache", redisCache);
+
+        sut.clearAll();
+
+        verify(redisCache).deleteByPattern("*");
+        verify(redisCache, never()).clearAll();
     }
 }

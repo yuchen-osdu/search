@@ -22,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opengroup.osdu.core.common.SwaggerDoc;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.search.CursorQueryRequest;
 import org.opengroup.osdu.core.common.model.search.CursorQueryResponse;
@@ -247,6 +248,38 @@ public class SearchApiTest {
         } catch (Exception e) {
             fail("Should not throw this exception " + e.getMessage());
         }
+    }
+
+    @Test
+    public void should_returnNoContent_whenSearchAfterCursorClosed() throws Exception {
+        when(this.searchAfterFeatureManager.isEnabled()).thenReturn(true);
+
+        ResponseEntity<Void> response = this.sut.closeCursor(SwaggerDoc.CURSOR_EXAMPLE, false);
+
+        verify(this.searchAfterQueryService, times(1)).close(SwaggerDoc.CURSOR_EXAMPLE);
+        assertEquals(HttpServletResponse.SC_NO_CONTENT, response.getStatusCodeValue());
+        assertNull(response.getBody());
+    }
+
+    @Test
+    public void should_returnNoContentWithoutClosing_whenSearchAfterDisabled() throws Exception {
+        when(this.searchAfterFeatureManager.isEnabled()).thenReturn(false);
+
+        ResponseEntity<Void> response = this.sut.closeCursor(SwaggerDoc.CURSOR_EXAMPLE, false);
+
+        verify(this.searchAfterQueryService, never()).close(any());
+        assertEquals(HttpServletResponse.SC_NO_CONTENT, response.getStatusCodeValue());
+        assertNull(response.getBody());
+    }
+
+    @Test
+    public void should_closeSearchAfterContext_whenSearchAfterQueryParamTrue() throws Exception {
+        when(this.searchAfterFeatureManager.isEnabled()).thenReturn(false);
+
+        ResponseEntity<Void> response = this.sut.closeCursor(SwaggerDoc.CURSOR_EXAMPLE, true);
+
+        verify(this.searchAfterQueryService, times(1)).close(SwaggerDoc.CURSOR_EXAMPLE);
+        assertEquals(HttpServletResponse.SC_NO_CONTENT, response.getStatusCodeValue());
     }
 
 }
