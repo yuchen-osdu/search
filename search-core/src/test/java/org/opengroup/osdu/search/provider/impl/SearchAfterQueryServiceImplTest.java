@@ -55,6 +55,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -658,6 +665,52 @@ public class SearchAfterQueryServiceImplTest {
         doReturn(null).when(searchResponse).pitId();
         String cursor = sut.refreshCursorCache(searchResponse, true, cursorSettings);
         assertNull(cursor);
+    }
+
+    @Test
+    public void refreshCursorCache_concurrentCalls_produceUniqueDigests() throws Exception {
+        int threadCount = 10;
+        int iterationsPerThread = 50;
+        int totalCalls = threadCount * iterationsPerThread;
+        Set<String> cursorHashes = ConcurrentHashMap.newKeySet();
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch latch = new CountDownLatch(1);
+        List<Future<?>> futures = new ArrayList<>();
+        List<Hit<Map<String, Object>>> hits = new ArrayList<>();
+        doReturn(hits).when(searchHits).hits();
+        SearchResponse[][] responses = new SearchResponse[threadCount][iterationsPerThread];
+        for (int i = 0; i < threadCount; i++) {
+            for (int j = 0; j < iterationsPerThread; j++) {
+                SearchResponse response = mock(SearchResponse.class);
+                doReturn("pitId-" + i + "-" + j).when(response).pitId();
+                doReturn(searchHits).when(response).hits();
+                responses[i][j] = response;
+            }
+        }
+
+        for (int i = 0; i < threadCount; i++) {
+            final int threadId = i;
+            futures.add(executor.submit(() -> {
+                try {
+                    latch.await();
+                    for (int j = 0; j < iterationsPerThread; j++) {
+                        SearchAfterSettings settings = SearchAfterSettings.builder().build();
+                        String hash = sut.refreshCursorCache(responses[threadId][j], true, settings);
+                        cursorHashes.add(hash);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }));
+        }
+
+        latch.countDown();
+        for (Future<?> future : futures) {
+            future.get(10, TimeUnit.SECONDS);
+        }
+        executor.shutdown();
+
+        assertEquals(totalCalls, cursorHashes.size());
     }
 
     @Test
