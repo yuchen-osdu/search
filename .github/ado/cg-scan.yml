@@ -29,3 +29,11 @@ resources:
 
 extends:
   template: ado/cg-scan.yml@osdu_spi
+  parameters:
+    scanType: LogOnly
+    mavenProfiles: core,azure
+    shippedModules: provider/search-azure
+    upstreamUrl: https://community.opengroup.org/osdu/platform/system/search-service.git
+    # This fork predates the upstream filter (no Upstream-Sha trailers); fork_upstream tip at initialization.
+    upstreamBaseline: 2788ce13b1b5e3a8b9af9ece99086318bcc9d6ef
+    images: ghcr.io/yuchen-osdu/search@sha256:30a1aa40983a92749149afc5af78ac4d9ab8acebed3f3b96484d33a92263c0d1
