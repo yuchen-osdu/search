@@ -1,0 +1,38 @@
+# Prototype for ADO Feature 84645, phase 0a: an Azure Pipelines run whose source is this GitHub repository.
+# Lives only on branch proto/cg-scan. Hello world: no build, no scan, no publish.
+
+trigger:
+  branches:
+    include:
+      - proto/cg-scan
+  tags:
+    include:
+      - cgproto-*
+
+pr: none
+
+schedules:
+  - cron: '0 * * * *'
+    displayName: Hourly (temporary, prototype only)
+    branches:
+      include:
+        - proto/cg-scan
+    always: true
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+    persistCredentials: false
+    fetchDepth: 0
+
+  - bash: |
+      set -euo pipefail
+      echo "repository:    $(Build.Repository.Name) ($(Build.Repository.Provider))"
+      echo "reason:        $(Build.Reason)"
+      echo "source branch: $(Build.SourceBranch)"
+      echo "source commit: $(Build.SourceVersion)"
+      echo "definition:    $(System.DefinitionId), build $(Build.BuildId)"
+      git log -1 --format='HEAD %H %s'
+    displayName: Hello world
