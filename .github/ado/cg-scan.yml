@@ -12,8 +12,8 @@ trigger:
 pr: none
 
 schedules:
-  - cron: '0 * * * *'
-    displayName: Hourly (temporary, prototype only)
+  - cron: '0 6 * * 1'
+    displayName: Weekly
     branches:
       include:
         - proto/cg-scan
@@ -30,7 +30,7 @@ resources:
 extends:
   template: ado/cg-scan.yml@osdu_spi
   parameters:
-    scanType: LogOnly
+    scanType: Register
     mavenProfiles: core,azure
     shippedModules: provider/search-azure
     upstreamUrl: https://community.opengroup.org/osdu/platform/system/search-service.git
