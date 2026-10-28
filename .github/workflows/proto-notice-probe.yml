@@ -1,0 +1,18 @@
+# Prototype probe for ADO Feature 84645 (phase 0d): do push and pull_request events made by the Azure Pipelines
+# App token start GitHub Actions runs? Lives only on proto branches; delete with the prototype.
+name: Proto NOTICE probe
+
+on:
+  push:
+    branches: [proto/notice-refresh]
+  pull_request:
+    branches: [proto/cg-scan]
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "event=${{ github.event_name }} actor=${{ github.actor }} triggering_actor=${{ github.triggering_actor }} sha=${{ github.sha }}"
