@@ -17,6 +17,7 @@ package org.opengroup.osdu.search.provider.azure.cache.impl;
 import jakarta.annotation.Resource;
 
 import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.cache.IRedisCache;
 import org.opengroup.osdu.core.common.model.search.CursorSettings;
 import org.opengroup.osdu.search.cache.CursorCache;
 import org.springframework.stereotype.Component;
@@ -44,6 +45,11 @@ public class CursorCacheImpl implements CursorCache {
 
   @Override
   public void clearAll() {
-    this.cache.clearAll();
+    if (this.cache instanceof IRedisCache) {
+      IRedisCache<?, ?> redisCache = (IRedisCache<?, ?>) this.cache;
+      redisCache.deleteByPattern("*");
+    } else {
+      this.cache.clearAll();
+    }
   }
 }

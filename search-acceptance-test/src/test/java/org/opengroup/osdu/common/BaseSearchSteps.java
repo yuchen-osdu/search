@@ -5,6 +5,7 @@ import io.cucumber.java.Scenario;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.search.CursorQueryRequest;
 import org.opengroup.osdu.core.common.model.search.CursorQueryResponse;
@@ -110,22 +111,28 @@ public class BaseSearchSteps {
         SearchTestConfig.updateEntitlementsDomainFromGroupId();
         this.scenario = scenario;
         headers = new HashMap<>();
+        spatialFilter = new SpatialFilter();
+        byBoundingBox = null;
+        byIntersection = null;
+        byWithinPolygon = null;
     }
 
     public static void setupSuiteLegalTag() {
         suiteLegalTagName = Config.getDataPartitionIdTenant1() + "-search-" + System.currentTimeMillis();
+        // Create body must match Legal CreateLegalTag (name, description, properties only).
+        // Gson omits nulls; sending isValid/id makes CIMPL legal return 400 "Failed to read request".
         LegalTagProperties properties = new LegalTagProperties(
             "A1234",
-            "Default",
+            "MyCompany",
             List.of(OTHER_RELEVANT_DATA_COUNTRY),
             "Public",
             "EAR99",
             "No Personal Data",
-            "2099-01-25",
+            "2099-12-25",
             "Public Domain Data");
         LegalTag legalTag = new LegalTag(
             null,
-            true,
+            null,
             suiteLegalTagName,
             properties,
             "Legal tag for search acceptance tests");
@@ -156,28 +163,36 @@ public class BaseSearchSteps {
             || !SHARED_SCHEMA_CLIENT.getTrackedIds().isEmpty();
     }
 
-    protected void waitForSearchIndex(String kind) {
+    /**
+     * Polls search until at least {@code expectedCount} records of the kind are visible.
+     * Search only returns records of the collaboration namespace given by the x-collaboration
+     * header (or records outside any namespace when it is absent), so the probe must carry the
+     * same header the records were ingested with.
+     */
+    protected void waitForSearchIndex(String kind, long expectedCount, String xCollaborationHeader) {
         String resolvedKind = generateActualName(kind);
         QueryRequest request = new QueryRequest();
         request.setKind(resolvedKind);
-        Map<String, String> probeHeaders = Map.of(
-            DpsHeaders.DATA_PARTITION_ID, getTenantMapping("tenant1"));
+        Map<String, String> probeHeaders = new HashMap<>();
+        probeHeaders.put(DpsHeaders.DATA_PARTITION_ID, getTenantMapping("tenant1"));
+        if (xCollaborationHeader != null && !xCollaborationHeader.isEmpty()) {
+            probeHeaders.put(DpsHeaders.COLLABORATION, xCollaborationHeader);
+        }
         int maxAttempts = Config.getSearchIndexWaitMaxAttempts();
         int intervalSeconds = Config.getSearchIndexWaitIntervalSeconds();
         log.info(
-            "Probing search index for kind '{}' (resolved='{}'), maxAttempts={}, intervalSeconds={}",
-            kind, resolvedKind, maxAttempts, intervalSeconds);
+            "Probing search index for kind '{}' (resolved='{}'), expectedCount={}, xCollaboration='{}', "
+                + "maxAttempts={}, intervalSeconds={}",
+            kind, resolvedKind, expectedCount, xCollaborationHeader, maxAttempts, intervalSeconds);
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
             int attemptNumber = attempt + 1;
             try {
                 HttpResponse<QueryResponse> response = searchClient().query(request, probeHeaders);
-                int resultCount = response.body() == null || response.body().getResults() == null
-                    ? 0
-                    : response.body().getResults().size();
+                long resultCount = response.body() == null ? 0 : response.body().getTotalCount();
                 log.debug(
                     "Search index probe attempt {}/{} response for kind '{}' (resolved='{}'): {}",
                     attemptNumber, maxAttempts, kind, resolvedKind, formatResponseBody(response.body()));
-                if (response.statusCode() == HttpStatus.SC_OK && resultCount > 0) {
+                if (response.statusCode() == HttpStatus.SC_OK && resultCount >= expectedCount) {
                     log.info(
                         "Search index ready for kind '{}' (resolved='{}') after {} probe attempt(s), resultCount={}",
                         kind, resolvedKind, attemptNumber, resultCount);
@@ -187,15 +202,9 @@ public class BaseSearchSteps {
                     "Search index probe attempt {}/{} for kind '{}' (resolved='{}'): status={}, resultCount={}",
                     attemptNumber, maxAttempts, kind, resolvedKind, response.statusCode(), resultCount);
             } catch (ClientException exception) {
-                log.info(
-                    "Search index probe attempt {}/{} for kind '{}' (resolved='{}') failed: {}",
-                    attemptNumber, maxAttempts, kind, resolvedKind, exception.getMessage());
-                if (exception.getError() != null) {
-                    log.debug(
-                        "Search index probe attempt {}/{} error body for kind '{}' (resolved='{}'): {}",
-                        attemptNumber, maxAttempts, kind, resolvedKind,
-                        formatResponseBody(exception.getError()));
-                }
+                logClientException(String.format(
+                    "Search index probe attempt %d/%d for kind '%s' (resolved='%s')",
+                    attemptNumber, maxAttempts, kind, resolvedKind), exception);
             }
             if (attemptNumber < maxAttempts) {
                 try {
@@ -207,8 +216,9 @@ public class BaseSearchSteps {
             }
         }
         String message = String.format(
-            "Search index not ready for kind '%s' (resolved='%s') after %d probe attempt(s)",
-            kind, resolvedKind, maxAttempts);
+            "Search index not ready for kind '%s' (resolved='%s', expectedCount=%d, xCollaboration='%s') "
+                + "after %d probe attempt(s)",
+            kind, resolvedKind, expectedCount, xCollaborationHeader, maxAttempts);
         log.warn(message);
         throw new AssertionError(message);
     }
@@ -295,8 +305,8 @@ public class BaseSearchSteps {
         return Boolean.TRUE.equals(USE_SEARCH_AFTER_CURSOR.get());
     }
 
-    protected HttpResponse<OpenApiSpec> executeGetApiDocs(Map<String, String> requestHeaders) {
-        HttpResponse<OpenApiSpec> response = searchClient().getApiDocs(requestHeaders);
+    protected HttpResponse<OpenApiSpec> executeGetApiDocs() {
+        HttpResponse<OpenApiSpec> response = searchClient().getApiDocs();
         logResponse(response);
         return response;
     }
@@ -352,6 +362,28 @@ public class BaseSearchSteps {
         }
         String payload = body instanceof String stringBody ? stringBody : toJson(body);
         return beautifyJsonString(payload);
+    }
+
+    private static void logClientException(String context, ClientException exception) {
+        log.error("{}: status={}, message={}", context, exception.getStatusCode(), exception.getMessage());
+        AppError error = exception.getError();
+        if (error != null) {
+            log.error("{}: error={}", context, formatClientError(error));
+            if (error.getOriginalException() != null) {
+                log.error("{}: originalException={}", context, error.getOriginalException().toString(),
+                    error.getOriginalException());
+            }
+        }
+    }
+
+    private static String formatClientError(AppError error) {
+        if (error.getReason() != null && !error.getReason().isBlank()) {
+            return error.getReason();
+        }
+        if (error.getMessage() != null && !error.getMessage().isBlank()) {
+            return error.getMessage();
+        }
+        return toJson(error);
     }
 
     protected String getTenantMapping(String tenant) {
@@ -439,7 +471,12 @@ public class BaseSearchSteps {
     private void createSchema(Setup input) {
         PersistentSchemaTestIndex testIndex = new PersistentSchemaTestIndex(schemaClient(), this);
         testIndex.setSchemaFile(input.getSchemaFile());
-        testIndex.setupSchema();
+        try {
+            testIndex.setupSchema();
+        } catch (ClientException exception) {
+            logClientException("Schema setup failed for schemaFile='" + input.getSchemaFile() + "'", exception);
+            throw exception;
+        }
         testIndex.setKind(testIndex.getSchemaModel().getSchemaInfo().getSchemaIdentity().getId());
     }
 
@@ -490,7 +527,7 @@ public class BaseSearchSteps {
             logResponse(response);
             assertEquals(HttpStatus.SC_CREATED, response.statusCode());
             trackIngestedResources(storageRecords, response, actualKind);
-            waitForSearchIndex(kind);
+            waitForSearchIndex(kind, storageRecords.length, xCollaborationHeader);
         } catch (Exception ex) {
             throw new AssertionError(ex.getMessage());
         }

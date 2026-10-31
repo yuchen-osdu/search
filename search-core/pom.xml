@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.opengroup.osdu</groupId>
         <artifactId>os-search</artifactId>
-        <version>0.30.0-SNAPSHOT</version>
+        <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -160,16 +160,6 @@
               <groupId>org.locationtech.spatial4j</groupId>
               <artifactId>spatial4j</artifactId>
           </dependency>
-          <dependency>
-              <groupId>com.vividsolutions</groupId>
-              <artifactId>jts</artifactId>
-              <exclusions>
-                  <exclusion>
-                      <groupId>xerces</groupId>
-                      <artifactId>xercesImpl</artifactId>
-                  </exclusion>
-              </exclusions>
-          </dependency>
 
           <dependency>
               <groupId>com.auth0</groupId>
@@ -236,7 +226,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.11</version>
+                <version>${jacoco.version}</version>
                 <configuration>
                 </configuration>
                 <executions>

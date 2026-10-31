@@ -18,7 +18,6 @@
 
 package org.opengroup.osdu.search.provider.impl;
 
-import static org.opengroup.osdu.core.common.Constants.COLLABORATIONS_FEATURE_NAME;
 import static org.opengroup.osdu.core.common.model.search.RecordMetaAttribute.COLLABORATION_ID;
 import static org.opengroup.osdu.search.config.SearchConfigurationProperties.POLICY_FEATURE_NAME;
 
@@ -36,6 +35,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.SocketTimeoutException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
@@ -111,21 +112,20 @@ abstract class CoreQueryBase {
       }
     }
 
-    if (featureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
-      Optional<CollaborationContext> collaborationContext =
-          collaborationContextFactory.create(dpsHeaders.getCollaboration());
-      if (collaborationContext.isPresent()) {
-        TermQuery.Builder termQueryBuilder =
-            QueryBuilders.term()
-                .field(COLLABORATION_ID.getValue())
-                .value(collaborationContext.get().getId())
-                .boost(1.0F);
-        queryBuilder.must(termQueryBuilder.build()._toQuery()).boost(1.0F);
-      } else {
-        ExistsQuery.Builder existsQueryBuilder =
-            QueryBuilders.exists().field(COLLABORATION_ID.getValue()).boost(1.0F);
-        queryBuilder.mustNot(existsQueryBuilder.build()._toQuery()).boost(1.0F);
-      }
+    // Handle x-collaboration header - always enabled by default
+    Optional<CollaborationContext> collaborationContext =
+        collaborationContextFactory.create(dpsHeaders.getCollaboration());
+    if (collaborationContext.isPresent()) {
+      TermQuery.Builder termQueryBuilder =
+          QueryBuilders.term()
+              .field(COLLABORATION_ID.getValue())
+              .value(collaborationContext.get().getId())
+              .boost(1.0F);
+      queryBuilder.must(termQueryBuilder.build()._toQuery()).boost(1.0F);
+    } else {
+      ExistsQuery.Builder existsQueryBuilder =
+          QueryBuilders.exists().field(COLLABORATION_ID.getValue()).boost(1.0F);
+      queryBuilder.mustNot(existsQueryBuilder.build()._toQuery()).boost(1.0F);
     }
 
     if (featureFlag.isFeatureEnabled(POLICY_FEATURE_NAME)) {
@@ -452,6 +452,14 @@ abstract class CoreQueryBase {
 
   private boolean userHasFullDataAccess() {
     return userContext.isRootUser();
+  }
+
+  MessageDigest getDigest() {
+    try {
+      return MessageDigest.getInstance("MD5");
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   <T> void processBuckets(
