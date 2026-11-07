@@ -119,15 +119,15 @@ suite class, not via CI plugin options):
 
 | Environment | Tags |
 |-------------|------|
-| Local default | `@default`, `@health`, `@SpatialLongitudeStandardRange` |
-| Core-plus (cimpl) | `@default`, `@health`, `@SpatialLongitudeStandardRange` |
+| Local default | `@default`, `@health`, `@SpatialLongitudeStandardRange`, `@xcollab` |
+| Core-plus (cimpl) | `@default`, `@health`, `@SpatialLongitudeStandardRange`, `@xcollab` |
 | AWS | `@default`, `@health`, `@SpatialLongitudeExtendedRange` |
 
 | Tag | Covered by default? | Notes |
 |-----|----------------------|-------|
 | `@default` | Yes | Main query, cursor, info, swagger, system metadata scenarios |
 | `@health` | Yes | Liveness and readiness checks |
-| `@xcollab` | No | Collaboration header scenarios (`QueryCollaboration.feature`); run via `QueryCollaborationAcceptanceTests` with an explicit tag filter |
+| `@xcollab` | Yes | Collaboration header scenarios (`QueryCollaboration.feature`) |
 | `@SpatialLongitudeStandardRange` | Yes (local / cimpl) | Invalid longitude range `[-180, 180]` |
 | `@SpatialLongitudeExtendedRange` | Yes (AWS CI only) | Invalid longitude range `[-360, 360]` |
 | `@autocomplete` | No | Autocomplete scenario; excluded from simple/default runs |

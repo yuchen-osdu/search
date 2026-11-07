@@ -21,7 +21,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
-import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.cache.IRedisCache;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -41,7 +41,7 @@ public class IndexAliasCacheTest {
     private static final String VALUE = "value";
     @Mock
     @Resource(name = "aliasCache")
-    private ICache<String, String> cache;
+    private IRedisCache<String, String> cache;
     @Mock
     @Autowired
     private JaxRsDpsLog log;
@@ -110,10 +110,10 @@ public class IndexAliasCacheTest {
     @Test
     public void should_invoke_clearAll_when_clearAll_cache_isCalled() {
         AtomicReference<Boolean> methodCalled = new AtomicReference<>(false);
-        doAnswer((Answer<Boolean>) invocation -> {
+        doAnswer((Answer<Long>) invocation -> {
             methodCalled.set(true);
-            return null;
-        }).when(cache).clearAll();
+            return 0L;
+        }).when(cache).deleteByPattern("*");
 
         sut.clearAll();
 

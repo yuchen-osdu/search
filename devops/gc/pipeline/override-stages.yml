@@ -13,7 +13,7 @@ variables:
   OTEL_JAVAAGENT_ENABLED: "true"
 
 download_gc_plugins:
-  image: maven:3.8.3-openjdk-17-slim
+  image: maven:${SERVICE_JAVA_VERSION}
   stage: build
   variables:
     GC_APD_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1480/packages/maven"

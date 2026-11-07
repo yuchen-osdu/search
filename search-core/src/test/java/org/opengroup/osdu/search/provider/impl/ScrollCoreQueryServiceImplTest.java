@@ -38,10 +38,13 @@ import co.elastic.clients.elasticsearch.core.search.TotalHits;
 import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.ContentTooLongException;
@@ -54,6 +57,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -117,8 +121,6 @@ public class ScrollCoreQueryServiceImplTest {
     private ElasticLoggingConfig elasticLoggingConfig;
     @Mock
     private ResponseExceptionParser exceptionParser;
-    @Mock
-    public IFeatureFlag collaborationFeatureFlag;
     @InjectMocks
     private ScrollCoreQueryServiceImpl sut;
 
@@ -128,6 +130,9 @@ public class ScrollCoreQueryServiceImplTest {
     @Mock
     private UserContext userContext;
 
+    @Mock
+    private CollaborationContextFactory collaborationContextFactory;
+
     @BeforeEach
     public void init() {
         Mockito.lenient().doReturn(userId).when(dpsHeaders).getUserEmail();
@@ -136,6 +141,7 @@ public class ScrollCoreQueryServiceImplTest {
         Mockito.lenient().doReturn(client).when(elasticClientHandler).getOrCreateRestClient();
         Mockito.lenient().when(elasticLoggingConfig.getEnabled()).thenReturn(false);
         Mockito.lenient().when(elasticLoggingConfig.getThreshold()).thenReturn(200L);
+        Mockito.lenient().when(collaborationContextFactory.create(any())).thenReturn(Optional.empty());
     }
 
     @Test
@@ -369,6 +375,41 @@ public class ScrollCoreQueryServiceImplTest {
     public void refreshCursorCache_rawCursorNull() {
         String cursor = sut.refreshCursorCache(null, userId);
         assertNull(cursor);
+    }
+
+    @Test
+    public void refreshCursorCache_concurrentCalls_produceUniqueDigests() throws Exception {
+        int threadCount = 10;
+        int iterationsPerThread = 50;
+        int totalCalls = threadCount * iterationsPerThread;
+        Set<String> cursorHashes = ConcurrentHashMap.newKeySet();
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch latch = new CountDownLatch(1);
+        List<Future<?>> futures = new ArrayList<>();
+
+        for (int i = 0; i < threadCount; i++) {
+            final int threadId = i;
+            futures.add(executor.submit(() -> {
+                try {
+                    latch.await();
+                    for (int j = 0; j < iterationsPerThread; j++) {
+                        String inputCursor = "rawCursor-" + threadId + "-" + j;
+                        String hash = sut.refreshCursorCache(inputCursor, userId);
+                        cursorHashes.add(hash);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }));
+        }
+
+        latch.countDown();
+        for (Future<?> future : futures) {
+            future.get(10, TimeUnit.SECONDS);
+        }
+        executor.shutdown();
+
+        assertEquals(totalCalls, cursorHashes.size());
     }
 
     @Test

@@ -26,7 +26,8 @@ import org.opengroup.osdu.util.Config;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
-        features = "classpath:features/querybycursor/singlecluster/QueryByCursor.feature",
+        features = {"classpath:features/querybycursor/singlecluster/QueryByCursor.feature",
+                    "classpath:features/querybycursor/search_after/QueryByCursorSearchAfter.feature"},
         glue = {"classpath:org.opengroup.osdu.step_definitions/querybycursor/singlecluster"},
         plugin = {"pretty", "junit:target/cucumber-reports/TEST-querybysearchafter-sc.xml"})
 public class RunTest {

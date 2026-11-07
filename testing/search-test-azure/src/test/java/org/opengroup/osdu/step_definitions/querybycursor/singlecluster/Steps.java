@@ -24,6 +24,7 @@ import org.opengroup.osdu.common.querybycursor.singlecluster.QueryByCursorSteps;
 import org.opengroup.osdu.util.AzureHTTPClient;
 import org.opengroup.osdu.util.Config;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class Steps extends QueryByCursorSteps {
@@ -117,6 +118,16 @@ public class Steps extends QueryByCursorSteps {
         super.define_bounding_box_with_points_and(topLatitude, topLongitude, bottomLatitude, bottomLongitude);
     }
 
+    @When("^I send a subsequent request with only the kind and cursor$")
+    public void i_send_a_subsequent_request_with_only_the_kind_and_cursor() {
+        super.i_send_a_subsequent_request_with_only_the_kind_and_cursor();
+    }
+
+    @When("^I send a subsequent request with the cursor, limit (\\d+) and fields ([\"(\\w-.)\",?]*)$")
+    public void i_send_a_subsequent_request_with_the_cursor_limit_and_fields(int limit, List<String> returnedFields) {
+        super.i_send_a_subsequent_request_with_the_cursor_limit_and_fields(limit, returnedFields);
+    }
+
     /******************Assert final response**************/
     @Then("^I should get in response (\\d+) records containing ([\"(\\w-.)\",?]*)$")
     public void i_should_get_in_response_records_containing_fields(int resultCount, List<String> fields) {
@@ -152,6 +163,11 @@ public class Steps extends QueryByCursorSteps {
     @Then("^I should get following autocomplete suggesstions (.*)")
     public void i_should_get_following_autocomplete_suggestions(String autocompleteOptions) {
         super.i_should_get_following_autocomplete_suggestions(autocompleteOptions);
+    }
+
+    @Then("^I should get in response (\\d+) records containing only ([\"(\\w-.)\",?]*)$")
+    public void i_should_get_in_response_records_containing_only(int count, String fields) {
+        super.i_should_get_in_response_records_containing_only_fields(count, Arrays.asList(fields.split(",")));
     }
 
     @Override

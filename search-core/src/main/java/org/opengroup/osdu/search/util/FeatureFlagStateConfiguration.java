@@ -17,7 +17,6 @@
 
 package org.opengroup.osdu.search.util;
 
-import static org.opengroup.osdu.core.common.Constants.COLLABORATIONS_FEATURE_NAME;
 import static org.opengroup.osdu.core.common.feature.PartitionFeatureFlagImpl.FF_SOURCE_DATA_PARTITION;
 import static org.opengroup.osdu.search.config.SearchConfigurationProperties.AUTOCOMPLETE_FEATURE_NAME;
 import static org.opengroup.osdu.search.config.SearchConfigurationProperties.POLICY_FEATURE_NAME;
@@ -64,15 +63,6 @@ public class FeatureFlagStateConfiguration {
         );
     }
 
-    @Bean
-    @RequestScope
-    public FeatureFlagStateResolver collaborationFFResolver() {
-        return CommonFeatureFlagStateResolverUtil.buildCommonFFStateResolver(
-            COLLABORATIONS_FEATURE_NAME,
-            tenantInfoService,
-            featureFlagService
-        );
-    }
 
     @Bean
     @RequestScope

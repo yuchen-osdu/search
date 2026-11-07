@@ -16,7 +16,7 @@ package org.opengroup.osdu.search.provider.azure.cache.impl;
 
 import io.lettuce.core.RedisException;
 import org.opengroup.osdu.azure.cache.ElasticCredentialsCache;
-import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.cache.IRedisCache;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.search.ClusterSettings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +30,7 @@ import jakarta.annotation.Resource;
 public class ElasticCredentialsCacheImpl extends ElasticCredentialsCache {
 
   @Resource(name = "clusterCache")
-  private ICache<String, ClusterSettings> cache;
+  private IRedisCache<String, ClusterSettings> cache;
 
   @Autowired
   private JaxRsDpsLog log;
@@ -62,7 +62,6 @@ public class ElasticCredentialsCacheImpl extends ElasticCredentialsCache {
 
   @Override
   public void clearAll() {
-    this.cache.clearAll();
+    this.cache.deleteByPattern("*");
   }
-
 }

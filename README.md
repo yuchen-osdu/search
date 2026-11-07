@@ -23,7 +23,7 @@ All documentation for the GC implementation of `os-search` lives [here](./provid
 
 ## AWS Implementation
 
-All documentation for the AWS implementation of `os-search` lives [here](./provider/search-aws/README.md)
+The AWS provider has been removed from this repository.
 
 ### Open API spec
 go-swagger brings to the go community a complete suite of fully-featured, high-performance, API components to work with a Swagger API: server, client and data model.

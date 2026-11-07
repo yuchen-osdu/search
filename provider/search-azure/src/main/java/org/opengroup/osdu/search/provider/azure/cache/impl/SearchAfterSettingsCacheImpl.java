@@ -16,6 +16,7 @@ package org.opengroup.osdu.search.provider.azure.cache.impl;
 
 import jakarta.annotation.Resource;
 import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.cache.IRedisCache;
 import org.opengroup.osdu.search.cache.SearchAfterSettingsCache;
 import org.opengroup.osdu.search.model.SearchAfterSettings;
 import org.springframework.stereotype.Component;
@@ -42,6 +43,11 @@ public class SearchAfterSettingsCacheImpl implements SearchAfterSettingsCache {
 
     @Override
     public void clearAll() {
-        this.cache.clearAll();
+        if (this.cache instanceof IRedisCache) {
+            IRedisCache<?, ?> redisCache = (IRedisCache<?, ?>) this.cache;
+            redisCache.deleteByPattern("*");
+        } else {
+            this.cache.clearAll();
+        }
     }
 }

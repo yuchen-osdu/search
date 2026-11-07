@@ -14,7 +14,7 @@
 package org.opengroup.osdu.search.provider.azure.cache.impl;
 
 import io.lettuce.core.RedisException;
-import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.cache.IRedisCache;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.search.cache.IIndexAliasCache;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +29,7 @@ import jakarta.annotation.Resource;
 @ConditionalOnProperty(value = "cache.provider", havingValue = "redis")
 public class IndexAliasCacheImpl implements IIndexAliasCache {
     @Resource(name = "aliasCache")
-    private ICache<String, String> cache;
+    private IRedisCache<String, String> cache;
 
     @Autowired
     private JaxRsDpsLog log;
@@ -61,6 +61,6 @@ public class IndexAliasCacheImpl implements IIndexAliasCache {
 
     @Override
     public void clearAll() {
-        this.cache.clearAll();
+        this.cache.deleteByPattern("*");
     }
 }

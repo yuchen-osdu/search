@@ -7,7 +7,7 @@ These instructions will get you a copy of the project up and running on your loc
 ### Prerequisites
 Pre-requisites
 
-* JDK 17
+* JDK 25
 * Lombok 1.28 or later
 * Maven
 
@@ -25,7 +25,7 @@ Check that maven is installed:
 $ mvn --version
 Apache Maven 3.8.7
 Maven home: /usr/share/maven
-Java version: 17.0.7
+Java version: 25.0.4
 ...
 ```
 
