@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.opengroup.osdu</groupId>
         <artifactId>os-search</artifactId>
-        <version>0.30.0-SNAPSHOT</version>
+        <version>${revision}</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -35,32 +35,12 @@
         <project.main.basedir>${project.parent.basedir}</project.main.basedir>
     </properties>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-web</artifactId>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.springframework.boot</groupId>
-                        <artifactId>spring-boot-starter-tomcat</artifactId>
-                    </exclusion>
-                </exclusions>
-                <version>${spring-boot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-bom</artifactId>
-                <version>6.3.0</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
     
     <dependencies>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>search-core-plus</artifactId>
-            <version>0.30.0-SNAPSHOT</version>
+            <version>${revision}</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback.contrib</groupId>
@@ -114,7 +94,7 @@
             <plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.10</version>
+				<version>${jacoco.version}</version>
 				<executions>
 					<execution>
 						<goals>

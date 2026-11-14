@@ -27,11 +27,11 @@ public class Config {
     }
 
     public static String getDataPartitionIdTenant2() {
-        return EnvLoader.get("DEFAULT_DATA_PARTITION_ID_TENANT2");
+        return EnvLoader.get("DEFAULT_DATA_PARTITION_ID_TENANT2", "non-exist");
     }
 
     public static String getEntitlementsDomain() {
-        return EnvLoader.get("ENTITLEMENTS_DOMAIN");
+        return EnvLoader.get("ENTITLEMENTS_DOMAIN", "group");
     }
 
     private static int parseIntOrDefault(String value, int defaultValue) {

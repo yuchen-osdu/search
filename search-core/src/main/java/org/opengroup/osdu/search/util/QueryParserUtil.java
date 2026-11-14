@@ -182,7 +182,12 @@ public class QueryParserUtil implements IQueryParserUtil {
                 String.format("Malformed parentheses in query part: \"%s\", %d of closing brackets missing", queryString, height));
         }
 
-        return transformStringTokensToQueryNode(tokens);
+        try {
+            return transformStringTokensToQueryNode(tokens);
+        } catch (IllegalStateException | IndexOutOfBoundsException e) {
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Malformed query",
+                    String.format("Malformed query: \"%s\"", queryString), e);
+        }
     }
 
     private boolean isDoubleQuote(char[] queryChars, int position) {
@@ -247,7 +252,10 @@ public class QueryParserUtil implements IQueryParserUtil {
                 queryNodes.add(innerQueryNode);
             }
             else if (isMultilevelNested.find()) {
-                multilevelNestedMatcher.find();
+                if (!multilevelNestedMatcher.find()) {
+                    throw new AppException(HttpStatus.SC_BAD_REQUEST, "Malformed query",
+                            String.format("Malformed nested query: \"%s\"", token));
+                }
                 NestedQueryNode nestedQueryNode = getMultilevelNestedQueryNode(multilevelNestedMatcher);
                 queryNodes.add(nestedQueryNode);
             } else if (oneLevelNestedMatcher.find()) {
@@ -278,14 +286,22 @@ public class QueryParserUtil implements IQueryParserUtil {
         String stringQuery = oneLevelNestedMatcher.group(QUERY_GROUP);
         Matcher beginQueryMatcher = beginStringQueryNestedPattern.matcher(stringQuery);
         if (beginQueryMatcher.find()) {
-            String incompletePath = beginQueryMatcher.group(INCOMPLETE_PATH_GROUP);
-            stringQuery = stringQuery.replaceFirst(incompletePath, nestedPath + "." + incompletePath);
+            int start = beginQueryMatcher.start(INCOMPLETE_PATH_GROUP);
+            stringQuery = new StringBuilder(stringQuery)
+                    .insert(start, nestedPath + ".")
+                    .toString();
         }
         Matcher stringQueryMatcher = intermediateStringQueryNestedPattern.matcher(stringQuery);
+        StringBuilder sb = new StringBuilder();
+        int lastEnd = 0;
         while (stringQueryMatcher.find()) {
-            String incompletePath = stringQueryMatcher.group(INCOMPLETE_PATH_GROUP);
-            stringQuery = stringQuery.replaceFirst(" " + incompletePath, " " + nestedPath + "." + incompletePath);
+            int fieldStart = stringQueryMatcher.start(INCOMPLETE_PATH_GROUP);
+            sb.append(stringQuery, lastEnd, fieldStart);
+            sb.append(nestedPath).append('.');
+            lastEnd = fieldStart;
         }
+        sb.append(stringQuery, lastEnd, stringQuery.length());
+        stringQuery = sb.toString();
         stringQuery = trimTrailingBrackets(stringQuery);
 
         return new NestedQueryNode(stringQuery, boolOperator, null, nestedPath);

@@ -25,7 +25,7 @@ import org.opengroup.osdu.core.common.model.search.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -43,9 +43,9 @@ import org.opengroup.osdu.search.util.IQueryPerformanceLogger;
 import org.opengroup.osdu.search.util.SuggestionsQueryUtil;
 import org.opengroup.osdu.search.util.GeoQueryBuilder;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.IOException;
@@ -69,11 +69,21 @@ import static org.mockito.Mockito.verify;
 @ContextConfiguration(classes = CoreQueryBaseTest.Config.class)
 public class CoreQueryBaseTest {
 
-    @MockBean
-    UserContext userContext;
-
-    @MockBean
-    SearchConfigurationProperties searchConfigurationProperties;
+    @MockitoBean UserContext userContext;
+    @MockitoBean SearchConfigurationProperties searchConfigurationProperties;
+    @MockitoBean DpsHeaders dpsHeaders;
+    @MockitoBean JaxRsDpsLog log;
+    @MockitoBean CrossTenantUtils crossTenantUtils;
+    @MockitoBean IPolicyService iPolicyService;
+    @MockitoBean IQueryParserUtil queryParserUtil;
+    @MockitoBean ISortParserUtil sortParserUtil;
+    @MockitoBean IDetailedBadRequestMessageUtil detailedBadRequestMessageUtil;
+    @MockitoBean ElasticLoggingConfig elasticLoggingConfig;
+    @MockitoBean IQueryPerformanceLogger tracingLogger;
+    @MockitoBean GeoQueryBuilder geoQueryBuilder;
+    @MockitoBean SuggestionsQueryUtil suggestionsQueryUtil;
+    @MockitoBean IFeatureFlag featureFlag;
+    @MockitoBean CollaborationContextFactory collaborationContextFactory;
 
     @TestConfiguration
     static class Config {
@@ -90,33 +100,9 @@ public class CoreQueryBaseTest {
                 @Override void queryFailedAuditLogger(Query request) {}
             };
         }
-
-        @MockBean DpsHeaders dpsHeaders;
-        @MockBean JaxRsDpsLog log;
-        @MockBean
-        CrossTenantUtils crossTenantUtils;
-        @MockBean
-        IPolicyService iPolicyService;
-        @MockBean IQueryParserUtil queryParserUtil;
-        @MockBean
-        ISortParserUtil sortParserUtil;
-        @MockBean IDetailedBadRequestMessageUtil detailedBadRequestMessageUtil;
-        @MockBean ElasticLoggingConfig elasticLoggingConfig;
-        @MockBean IQueryPerformanceLogger tracingLogger;
-        @MockBean GeoQueryBuilder geoQueryBuilder;
-        @MockBean SuggestionsQueryUtil suggestionsQueryUtil;
-        @MockBean IFeatureFlag featureFlag;
-        @MockBean CollaborationContextFactory collaborationContextFactory;
     }
 
     @Resource CoreQueryBase coreQueryBase;
-    @Resource CrossTenantUtils crossTenantUtils;
-    @Resource IQueryParserUtil queryParserUtil;
-    @Resource ElasticLoggingConfig elasticLoggingConfig;
-    @Resource IFeatureFlag featureFlag;
-    @Resource ISortParserUtil sortParserUtil;
-    @Resource IQueryPerformanceLogger tracingLogger;
-    @Resource SuggestionsQueryUtil suggestionsQueryUtil;
 
     @BeforeEach
     void setup() {

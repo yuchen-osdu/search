@@ -18,5 +18,9 @@
     "multilevel-nested-query-with-space": 1,
 	"nested-query-with-AND-OR-keywords-inside-double-quotes": 2,
     "nested-query-with-parent-keywords-inside-double-quotes": 2,
-	"nested-query-with-escaped-quote-inside-double-quotes": 2
+	"nested-query-with-escaped-quote-inside-double-quotes": 2,
+    "nested-query-with-regex-metacharacters-in-fields": 1,
+    "nested-query-with-dollar-and-backslash-in-path": 1,
+    "nested-query-with-value-equal-to-field-name": 1,
+    "nested-query-with-nested-quantifier-in-field": 1
 }

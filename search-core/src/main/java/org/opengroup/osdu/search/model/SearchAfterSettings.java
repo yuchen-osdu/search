@@ -17,6 +17,7 @@ package org.opengroup.osdu.search.model;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import org.opengroup.osdu.core.common.model.search.CursorQueryRequest;
 
 import java.util.List;
 
@@ -31,6 +32,5 @@ public class SearchAfterSettings {
     private List<String> fieldValueJsons;
     private boolean closed;
     private long totalCount;
+    private CursorQueryRequest cachedQuery;
 }
-
-

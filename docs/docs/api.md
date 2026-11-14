@@ -1599,12 +1599,12 @@ Example response:
 ```json
 {
   "groupId": "org.opengroup.osdu",
-  "artifactId": "search-azure",
+  "artifactId": "search-core-plus",
   "version": "0.19.3",
   "buildTime": "2023-05-08T18:57:10.854Z",
   "branch": "master",
   "commitId": "e39447ef448287538a273dc46393b3d9f795c0c1",
-  "commitMessage": "Merged PR 20150: Use 0.20.0-rc5 of core lib azure",
+  "commitMessage": "Merge branch 'feature' into 'master'",
   "connectedOuterServices": [
     {
       "name": "elasticSearch",

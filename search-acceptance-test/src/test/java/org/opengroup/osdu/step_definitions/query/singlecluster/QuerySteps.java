@@ -43,11 +43,12 @@ import static org.opengroup.osdu.util.Utility.parseCommaSeparatedList;
 @SuppressWarnings("unused")
 public class QuerySteps extends BaseSearchSteps {
 
-    private final QueryRequest requestQuery = new QueryRequest();
+    private QueryRequest requestQuery = new QueryRequest();
 
     @Before
     public void before(Scenario scenario) {
         initScenario(scenario);
+        requestQuery = new QueryRequest();
     }
 
     @Given("the schema is created with the following kind")

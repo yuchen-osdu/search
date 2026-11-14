@@ -13,17 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 # Search and Indexer Service
 
-## Azure Implementation
-
-All documentation for the Azure implementation of `os-search` lives [here](./provider/search-azure/README.md)
-
 ## Google Cloud Implementation
 
 All documentation for the GC implementation of `os-search` lives [here](./provider/search-gc/README.md)
 
 ## AWS Implementation
 
-All documentation for the AWS implementation of `os-search` lives [here](./provider/search-aws/README.md)
+The AWS provider has been removed from this repository.
 
 ### Open API spec
 go-swagger brings to the go community a complete suite of fully-featured, high-performance, API components to work with a Swagger API: server, client and data model.
@@ -59,7 +55,7 @@ go-swagger brings to the go community a complete suite of fully-featured, high-p
 #### Server Url(full path vs relative path) configuration
 - `api.server.fullUrl.enabled=true` It will generate full server url in the OpenAPI swagger
 - `api.server.fullUrl.enabled=false` It will generate only the contextPath only
-- default value is false (Currently only in Azure it is enabled)
+- default value is false
 [Reference]:(https://springdoc.org/faq.html#_how_is_server_url_generated) 
 
 ### Maintenance
