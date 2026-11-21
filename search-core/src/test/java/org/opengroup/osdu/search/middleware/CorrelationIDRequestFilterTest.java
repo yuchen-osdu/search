@@ -73,6 +73,7 @@ public class CorrelationIDRequestFilterTest {
 
         dpsHeaders = new DpsHeaders();
         dpsHeaders.addCorrelationIdIfMissing();
+        org.springframework.test.util.ReflectionTestUtils.setField(sut, "requestHeaders", dpsHeaders);
 
     	when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
         when(httpResponse.getStatus()).thenReturn(200);
@@ -82,8 +83,9 @@ public class CorrelationIDRequestFilterTest {
     }
 
 	@Test
-	public void should_notAddCorrelationIdInHttpHeaders_when_correlationIdIsAlreadyProvidedByTheUser() throws Exception {
+	public void should_useProvidedCorrelationId_when_userProvidedIt() throws Exception {
 		final String CORRELATION_ID = "any previous correlation id";
+        dpsHeaders.put(DpsHeaders.CORRELATION_ID, CORRELATION_ID);
 
         when(httpRequest.getMethod()).thenReturn("GET");
         when(httpRequest.getRequestURI()).thenReturn("http://foobar/query");
@@ -95,7 +97,7 @@ public class CorrelationIDRequestFilterTest {
 
 		sut.doFilter(httpRequest, httpResponse, filterChain);
 
-        assertNotNull(httpResponse.containsHeader(DpsHeaders.CORRELATION_ID));
+        verify(httpResponse).addHeader(DpsHeaders.CORRELATION_ID, CORRELATION_ID);
         assertNotNull(dpsHeaders.getCorrelationId());
 	}
 

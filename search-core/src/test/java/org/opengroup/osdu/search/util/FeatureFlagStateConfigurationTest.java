@@ -18,7 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.opengroup.osdu.core.common.Constants.COLLABORATIONS_FEATURE_NAME;
 import static org.opengroup.osdu.core.common.feature.PartitionFeatureFlagImpl.FF_SOURCE_DATA_PARTITION;
 import static org.opengroup.osdu.search.config.SearchConfigurationProperties.AUTOCOMPLETE_FEATURE_NAME;
 import static org.opengroup.osdu.search.config.SearchConfigurationProperties.POLICY_FEATURE_NAME;
@@ -95,18 +94,6 @@ class FeatureFlagStateConfigurationTest {
             POLICY_FEATURE_NAME.equals(state.getName()) && PARTITION_B.equals(state.getPartition()) && state.isEnabled()));
     }
 
-    @Test
-    void collaborationFFResolver_returnsFeatureFlagStatePerTenant() {
-        stubTenantsAndFeatureFlagSource();
-        when(featureFlagService.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME, PARTITION_A)).thenReturn(true);
-        when(featureFlagService.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME, PARTITION_B)).thenReturn(true);
-
-        List<FeatureFlagState> states = configuration.collaborationFFResolver().retrieveStates();
-
-        assertEquals(2, states.size());
-        assertTrue(states.stream().allMatch(state ->
-            COLLABORATIONS_FEATURE_NAME.equals(state.getName()) && state.isEnabled()));
-    }
 
     @Test
     void searchAfterFFResolver_returnsPartitionBackedFeatureFlagStatePerTenant() {

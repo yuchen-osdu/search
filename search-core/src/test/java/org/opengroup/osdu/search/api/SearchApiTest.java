@@ -22,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opengroup.osdu.core.common.SwaggerDoc;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.search.CursorQueryRequest;
 import org.opengroup.osdu.core.common.model.search.CursorQueryResponse;
@@ -106,7 +107,7 @@ public class SearchApiTest {
         assertEquals(1, apiResponse.getTotalCount());
         assertEquals(1, apiResponse.getResults().size());
         assertEquals("tenant1:welldb:well-33fe05e1-df20-49d9-bd63-74cf750a206f", apiResponse.getResults().get(0).get("_id"));
-        assertEquals(HttpServletResponse.SC_OK, response.getStatusCodeValue());
+        assertEquals(HttpServletResponse.SC_OK, response.getStatusCode().value());
     }
 
     @Test
@@ -127,7 +128,7 @@ public class SearchApiTest {
         assertEquals(0, apiResponse.getAggregations().size());
         assertEquals(1, apiResponse.getResults().size());
         assertEquals("tenant1:welldb:well-33fe05e1-df20-49d9-bd63-74cf750a206f", apiResponse.getResults().get(0).get("_id"));
-        assertEquals(HttpServletResponse.SC_OK, response.getStatusCodeValue());
+        assertEquals(HttpServletResponse.SC_OK, response.getStatusCode().value());
     }
 
     @Test
@@ -161,7 +162,7 @@ public class SearchApiTest {
         assertEquals(1, apiResponse.getTotalCount());
         assertEquals(1, apiResponse.getResults().size());
         assertEquals("tenant1:welldb:well-33fe05e1-df20-49d9-bd63-74cf750a206f", apiResponse.getResults().get(0).get("_id"));
-        assertEquals(HttpServletResponse.SC_OK, response.getStatusCodeValue());
+        assertEquals(HttpServletResponse.SC_OK, response.getStatusCode().value());
     }
 
     @Test
@@ -196,7 +197,7 @@ public class SearchApiTest {
         assertEquals(1, apiResponse.getTotalCount());
         assertEquals(1, apiResponse.getResults().size());
         assertEquals("tenant1:welldb:well-33fe05e1-df20-49d9-bd63-74cf750a206f", apiResponse.getResults().get(0).get("_id"));
-        assertEquals(HttpServletResponse.SC_OK, response.getStatusCodeValue());
+        assertEquals(HttpServletResponse.SC_OK, response.getStatusCode().value());
     }
 
     @Test
@@ -228,7 +229,7 @@ public class SearchApiTest {
         assertEquals(1, apiResponse.getTotalCount());
         assertEquals(1, apiResponse.getResults().size());
         assertEquals("tenant1:welldb:well-33fe05e1-df20-49d9-bd63-74cf750a206f", apiResponse.getResults().get(0).get("_id"));
-        assertEquals(HttpServletResponse.SC_OK, response.getStatusCodeValue());
+        assertEquals(HttpServletResponse.SC_OK, response.getStatusCode().value());
     }
 
     @Test
@@ -247,6 +248,38 @@ public class SearchApiTest {
         } catch (Exception e) {
             fail("Should not throw this exception " + e.getMessage());
         }
+    }
+
+    @Test
+    public void should_returnNoContent_whenSearchAfterCursorClosed() throws Exception {
+        when(this.searchAfterFeatureManager.isEnabled()).thenReturn(true);
+
+        ResponseEntity<Void> response = this.sut.closeCursor(SwaggerDoc.CURSOR_EXAMPLE, false);
+
+        verify(this.searchAfterQueryService, times(1)).close(SwaggerDoc.CURSOR_EXAMPLE);
+        assertEquals(HttpServletResponse.SC_NO_CONTENT, response.getStatusCode().value());
+        assertNull(response.getBody());
+    }
+
+    @Test
+    public void should_returnNoContentWithoutClosing_whenSearchAfterDisabled() throws Exception {
+        when(this.searchAfterFeatureManager.isEnabled()).thenReturn(false);
+
+        ResponseEntity<Void> response = this.sut.closeCursor(SwaggerDoc.CURSOR_EXAMPLE, false);
+
+        verify(this.searchAfterQueryService, never()).close(any());
+        assertEquals(HttpServletResponse.SC_NO_CONTENT, response.getStatusCode().value());
+        assertNull(response.getBody());
+    }
+
+    @Test
+    public void should_closeSearchAfterContext_whenSearchAfterQueryParamTrue() throws Exception {
+        when(this.searchAfterFeatureManager.isEnabled()).thenReturn(false);
+
+        ResponseEntity<Void> response = this.sut.closeCursor(SwaggerDoc.CURSOR_EXAMPLE, true);
+
+        verify(this.searchAfterQueryService, times(1)).close(SwaggerDoc.CURSOR_EXAMPLE);
+        assertEquals(HttpServletResponse.SC_NO_CONTENT, response.getStatusCode().value());
     }
 
 }

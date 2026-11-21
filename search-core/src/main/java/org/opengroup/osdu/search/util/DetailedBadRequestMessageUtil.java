@@ -21,8 +21,9 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.ErrorResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.StringJoiner;
@@ -92,7 +93,7 @@ public class DetailedBadRequestMessageUtil implements IDetailedBadRequestMessage
                     "Unable to find fail reason in elasticsearch response:%s",
                     errorNode.textValue()));
           }
-        } catch (IOException ex) {
+        } catch (IOException | JacksonException ex) {
           log.error("Unable to parse fail reason from elasticsearch response");
         }
       }

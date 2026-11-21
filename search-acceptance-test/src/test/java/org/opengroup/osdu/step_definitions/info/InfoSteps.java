@@ -11,7 +11,6 @@ public class InfoSteps extends BaseGetInfoCucumberAcceptanceTests {
     private static final List<String> EXPECTED_FEATURE_FLAGS = List.of(
         "featureFlag.autocomplete.enabled",
         "featureFlag.policy.enabled",
-        "collaborations-enabled",
         "query-with-search-after"
     );
 

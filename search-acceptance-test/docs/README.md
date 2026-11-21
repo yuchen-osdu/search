@@ -10,9 +10,8 @@ Export the variables below (or place them in a `.env` file loaded by `os-core-te
 |-------------------------------------|----------------------------------------------------------------------------|------------------------------------------------------|------------|----------|
 | `HOST`                              | eg `https://osdu.core-dev.gcp.gnrg-osdu.projects.epam.com`                 | Base URL for the OSDU platform                       | no         | yes      |
 | `DATA_PARTITION_ID`                 | eg `osdu`                                                                  | Primary data partition ID (tenant 1)                 | no         | yes      |
-| `DEFAULT_DATA_PARTITION_ID_TENANT2` | eg `non-exist`                                                             | Non-existing tenant for negative tests               | no         | yes      |
-| `ENTITLEMENTS_DOMAIN`               | eg `group`                                                                 | Domain name for entitlements service                 | no         | yes      |
-| `GROUP_ID`                          | eg `group`                                                                 | Group ID used in test data and ACLs                  | no         | yes      |
+| `DEFAULT_DATA_PARTITION_ID_TENANT2` | eg `non-exist`                                                             | Non-existing tenant for negative tests (default: `non-exist`) | no | no |
+| `ENTITLEMENTS_DOMAIN`               | eg `group`                                                                 | Domain name for entitlements service (default: `group`) | no      | no       |
 
 Legal tags for record ingestion are created automatically before each Cucumber suite and deleted afterward (country of origin: `US`). No `LEGAL_TAG` or `OTHER_RELEVANT_DATA_COUNTRIES` configuration is required.
 
@@ -54,7 +53,7 @@ The integration account behind `PRIVILEGED_USER` must have at least:
 | data.test1                |
 | data.integration.test     |
 
-Also assign the deployment-specific group email `users@{DATA_PARTITION_ID}@{GROUP_ID}.com` in entitlements (not listed in `required-roles.json` because it varies by environment).
+Also assign the deployment-specific group email `users@{DATA_PARTITION_ID}.{ENTITLEMENTS_DOMAIN}` in entitlements (not listed in `required-roles.json` because it varies by environment).
 
 ### Test suites
 
@@ -63,7 +62,7 @@ Each row is a JUnit Platform suite class run by `mvn test`.
 | Suite class | Feature file | Notes |
 |-------------|--------------|-------|
 | `HealthAcceptanceTests` | `features/health/Health.feature` | 2 scenarios (`@health`) |
-| `InfoAcceptanceTests` | `features/info/Info.feature` | 2 scenarios (`@default`) |
+| `InfoAcceptanceTests` | `features/info/Info.feature` | 3 scenarios (`@default`) |
 | `SwaggerAcceptanceTests` | `features/swagger/Swagger.feature` | 1 scenario (`@default`) |
 | `QuerySingleClusterAcceptanceTests` | `features/query/singlecluster/Query.feature` | 105 scenario examples |
 | `QuerySystemMetadataAcceptanceTests` | `features/query/singlecluster/SystemMetadata.feature` | 13 scenario examples |
@@ -110,7 +109,7 @@ cd search-acceptance-test && mvn test -Dtest=QuerySingleClusterAcceptanceTests
 Default local filter (`src/test/resources/junit-platform.properties`):
 
 ```
-@default or @health or @SpatialLongitudeStandardRange
+@default or @health or @SpatialLongitudeStandardRange or @xcollab or @autocomplete
 ```
 
 CI overrides via `-Dcucumber.filter.tags` in pipeline config (Allure is configured in each
@@ -119,20 +118,20 @@ suite class, not via CI plugin options):
 
 | Environment | Tags |
 |-------------|------|
-| Local default | `@default`, `@health`, `@SpatialLongitudeStandardRange` |
-| Core-plus (cimpl) | `@default`, `@health`, `@SpatialLongitudeStandardRange` |
+| Local default | `@default`, `@health`, `@SpatialLongitudeStandardRange`, `@xcollab`, `@autocomplete` |
+| Core-plus (cimpl) | `@default`, `@health`, `@SpatialLongitudeStandardRange`, `@xcollab`, `@autocomplete` |
 | AWS | `@default`, `@health`, `@SpatialLongitudeExtendedRange` |
 
 | Tag | Covered by default? | Notes |
 |-----|----------------------|-------|
 | `@default` | Yes | Main query, cursor, info, swagger, system metadata scenarios |
 | `@health` | Yes | Liveness and readiness checks |
-| `@xcollab` | No | Collaboration header scenarios (`QueryCollaboration.feature`); run via `QueryCollaborationAcceptanceTests` with an explicit tag filter |
+| `@xcollab` | Yes | Collaboration header scenarios (`QueryCollaboration.feature`) |
 | `@SpatialLongitudeStandardRange` | Yes (local / cimpl) | Invalid longitude range `[-180, 180]` |
 | `@SpatialLongitudeExtendedRange` | Yes (AWS CI only) | Invalid longitude range `[-360, 360]` |
-| `@autocomplete` | No | Autocomplete scenario; excluded from simple/default runs |
+| `@autocomplete` | Yes (local / cimpl) | Autocomplete scenario; fails unless `featureFlag.autocomplete.enabled` is `true` for the data partition |
 
-With the local default filter, `QuerySingleClusterAcceptanceTests` runs **100** examples and skips **5** (`@SpatialLongitudeExtendedRange` × 4, `@autocomplete` × 1). The feature file contains **105** examples in total.
+With the local default filter, `QuerySingleClusterAcceptanceTests` runs **101** examples and skips **4** (`@SpatialLongitudeExtendedRange` × 4). The feature file contains **105** examples in total.
 
 ## License
 

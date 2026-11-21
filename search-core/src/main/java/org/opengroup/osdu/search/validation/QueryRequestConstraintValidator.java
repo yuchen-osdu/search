@@ -14,8 +14,6 @@
 
 package org.opengroup.osdu.search.validation;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Set;
 
 import jakarta.validation.Configuration;
@@ -26,24 +24,21 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 
-import org.hibernate.validator.internal.util.privilegedactions.NewInstance;
-
 import org.opengroup.osdu.core.common.model.search.QueryRequest;
 
 public class QueryRequestConstraintValidator implements ConstraintValidatorFactory {
 
+	private final ConstraintValidatorFactory defaultFactory =
+		Validation.byDefaultProvider().configure().getDefaultConstraintValidatorFactory();
+
 	@Override
 	public <T extends ConstraintValidator<?, ?>> T getInstance(Class<T> key) {
-		return run(NewInstance.action(key, "ConstraintValidator"));
+		return defaultFactory.getInstance(key);
 	}
 
 	@Override
 	public void releaseInstance(ConstraintValidator<?, ?> instance) {
-		// do nothing
-	}
-
-	private <T> T run(PrivilegedAction<T> action) {
-		return System.getSecurityManager() != null ? AccessController.doPrivileged(action) : action.run();
+		defaultFactory.releaseInstance(instance);
 	}
 
 	public Validator getValidator() {

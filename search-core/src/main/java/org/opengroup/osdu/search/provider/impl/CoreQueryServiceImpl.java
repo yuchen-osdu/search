@@ -101,8 +101,7 @@ public class CoreQueryServiceImpl extends CoreQueryBase implements IQueryService
         .index(index)
         .allowNoIndices(true)
         .expandWildcards(ExpandWildcard.Open, ExpandWildcard.Closed)
-        .ignoreUnavailable(true)
-        .ignoreThrottled(true);
+        .ignoreUnavailable(true);
     sourceBuilder.searchType(SearchType.QueryThenFetch);
     sourceBuilder.batchedReduceSize(512L).ccsMinimizeRoundtrips(true);
 

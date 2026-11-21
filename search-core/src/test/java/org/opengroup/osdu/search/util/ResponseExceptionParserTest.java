@@ -25,7 +25,6 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -88,7 +87,7 @@ public class ResponseExceptionParserTest {
         List<String> result = parser.parseException(cause);
 
         assertTrue(result.isEmpty());
-        verify(log).error(startsWith("Unable to parse response exception content"), any(IOException.class));
+        verify(log).error(startsWith("Unable to parse response exception content"), any(tools.jackson.core.JacksonException.class));
     }
 
     @Test

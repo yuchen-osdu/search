@@ -23,7 +23,7 @@ import co.elastic.clients.elasticsearch.indices.*;
 import co.elastic.clients.elasticsearch.indices.get_alias.IndexAliases;
 import co.elastic.clients.elasticsearch.indices.update_aliases.Action;
 import co.elastic.clients.elasticsearch.indices.update_aliases.AddAction;
-import com.google.api.client.util.Strings;
+import org.apache.commons.lang3.StringUtils;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -82,7 +82,7 @@ public class IndexAliasServiceImpl implements IndexAliasService {
               log.error(String.format("Fail to create index alias for kind '%s'", kind), e);
             }
           }
-          if (!Strings.isNullOrEmpty(alias)) {
+          if (!StringUtils.isEmpty(alias)) {
             aliases.put(kind, alias);
             indexAliasCache.put(kind, alias);
           }
@@ -117,7 +117,7 @@ public class IndexAliasServiceImpl implements IndexAliasService {
       // To create an alias for an index, the index name must the concrete index name, not alias
       index = resolveConcreteIndexName(restClient, index);
     }
-    if (!Strings.isNullOrEmpty(index)) {
+    if (!StringUtils.isEmpty(index)) {
       AddAction.Builder addAction = new AddAction.Builder();
       addAction.index(index);
       addAction.alias(alias);
@@ -136,7 +136,7 @@ public class IndexAliasServiceImpl implements IndexAliasService {
   }
 
   private boolean isCompleteVersionKind(String kind) {
-    return !Strings.isNullOrEmpty(kind) && kind.matches(KIND_COMPLETE_VERSION_PATTERN);
+    return !StringUtils.isEmpty(kind) && kind.matches(KIND_COMPLETE_VERSION_PATTERN);
   }
 
   private String resolveConcreteIndexName(ElasticsearchClient restClient, String index)

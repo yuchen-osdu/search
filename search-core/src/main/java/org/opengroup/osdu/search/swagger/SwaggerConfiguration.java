@@ -100,7 +100,17 @@ public class SwaggerConfiguration {
         };
     }
 
-    // Springdoc may emit `type: object` together with `anyOf` for composed properties,
+    @Bean
+    public OperationCustomizer alignQueryWithCursorOperationParameters() {
+        return QueryWithCursorOpenApiCustomizer::customizeOperation;
+    }
+
+    @Bean
+    public OpenApiCustomizer alignQueryWithCursorSchemaDeclarations() {
+        return QueryWithCursorOpenApiCustomizer::apply;
+    }
+
+    // Springdoc may emit `type: object` together with `anyOf`/`oneOf` for composed properties,
     // which can misrepresent union fields in generated OpenAPI clients; clear the type in this case.
     @Bean
     public OpenApiCustomizer stripObjectTypeFromAnyOfSchemas() {
@@ -123,7 +133,8 @@ public class SwaggerConfiguration {
                     // `type: object` alongside the `anyOf` — an unsatisfiable schema, since no value
                     // is both an object and one of the anyOf branches. Drop the stray type so the
                     // union is valid.
-                    if (propertySchema.getAnyOf() == null || propertySchema.getAnyOf().isEmpty()) {
+                    if ((propertySchema.getAnyOf() == null || propertySchema.getAnyOf().isEmpty())
+                            && (propertySchema.getOneOf() == null || propertySchema.getOneOf().isEmpty())) {
                         continue;
                     }
                     // OpenAPI 3.0 holds the type in the singular `type` field; OpenAPI 3.1 (what

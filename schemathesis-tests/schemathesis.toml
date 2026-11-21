@@ -2,32 +2,21 @@ seed = 42424242424424242
 workers = 1
 continue-on-failure = true
 request-timeout = 30.0
-hooks="./hooks/hooks.py"
-
-# NOTE: `CursorQueryRequest` (defined in os-core-common) carries enough pattern/format/enum
-# constraints that Hypothesis filters out most generated request bodies and aborts the
-# `POST /query_with_cursor` operation with a `filter_too_much` health check. This must be
-# suppressed via the `--suppress-health-check=filter_too_much` CLI flag in .gitlab-ci.yml:
-# the top-level `suppress-health-check` config key is validated but NOT honored at runtime in
-# schemathesis 4.17.0 (unlike `[checks]` below, which works). Re-evaluate on schemathesis bumps.
+hooks = "./hooks/hooks.py"
+# Tight kind/cursor patterns cause Hypothesis to filter most bodies
+# (tooling limitation, not an API defect). Same as legal/entitlements.
+suppress-health-check = ["filter_too_much"]
 
 [generation]
 mode = "all"
-max-examples = 500
-
-# Checks disabled below assert behavior the OSDU platform delegates to the API gateway /
-# servlet container rather than to this service, so the service legitimately responds
-# differently from what these checks expect. Keep every other check enabled.
-[checks]
-# Gateway enforces bearer auth; the service runs request/param validation first and returns
-# 400 (not 401) when the Authorization header is absent.
-missing_required_header.enabled = false
-# Method routing is handled upstream; unmapped methods (e.g. TRACE) return 400, not 405.
-unsupported_method.enabled = false
-# Edge/error responses surface framework-default content types (text/plain on malformed or
-# firewall-rejected input) that the service does not contractually own; documented success
-# responses are still correct.
-content_type_conformance.enabled = false
+# Shared CRS budget with legal/storage/entitlements (master used 500).
+# Raising this for query ops is tracked in
+# https://community.opengroup.org/osdu/platform/system/search-service/-/issues/515
+max-examples = 20
+# Spring MVC ignores undeclared query/header extras (returns 2xx). Do not
+# generate those mutations so negative_data_rejection stays enabled for real
+# schema violations (storage/entitlements).
+allow-extra-parameters = false
 
 [phases.stateful]
 enabled = false
@@ -46,3 +35,21 @@ path = "./output/junit/junit.xml"
 
 [reports.allure]
 path = "./output/allure/results"
+
+# Coverage on POST/DELETE query ops is slow (regex-backed kind/cursor +
+# Elasticsearch). Examples + fuzzing still run. Re-enable coverage in
+# https://community.opengroup.org/osdu/platform/system/search-service/-/issues/515
+[[operations]]
+include-path = "/query"
+include-method = "POST"
+phases = { coverage = { enabled = false } }
+
+[[operations]]
+include-path = "/query_with_cursor"
+include-method = "POST"
+phases = { coverage = { enabled = false } }
+
+[[operations]]
+include-path = "/query_with_cursor/{cursor}"
+include-method = "DELETE"
+phases = { coverage = { enabled = false } }

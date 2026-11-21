@@ -66,7 +66,7 @@ public class GeoQueryBuilderTest {
 
     Query actualResult = this.sut.getGeoQuery(spatialFilter);
 
-    assert expectedResult.query() != null;
+    assertNotNull(expectedResult.query());
     assertNotNull(actualResult);
     assertEquals(expectedResult.query().toString(), actualResult.toString());
     assertEquals(GEO_FIELD, actualResult.geoShape().field());
@@ -91,7 +91,7 @@ public class GeoQueryBuilderTest {
 
     Query actualResult = this.sut.getGeoQuery(spatialFilter);
 
-    assert expectedResult.query() != null;
+    assertNotNull(expectedResult.query());
     assertNotNull(actualResult);
     assertEquals(expectedResult.query().toString(), actualResult.toString());
     assertEquals(GEO_FIELD, actualResult.geoShape().field());
@@ -124,7 +124,7 @@ public class GeoQueryBuilderTest {
 
     Query actualResult = this.sut.getGeoQuery(spatialFilter);
 
-    assert expectedResult.query() != null;
+    assertNotNull(expectedResult.query());
     assertNotNull(actualResult);
     assertEquals(expectedResult.query().toString(), actualResult.toString());
     assertEquals(GEO_FIELD, actualResult.geoShape().field());
@@ -160,7 +160,7 @@ public class GeoQueryBuilderTest {
 
     Query actualResult = this.sut.getGeoQuery(spatialFilter);
 
-    assert expectedResult.query() != null;
+    assertNotNull(expectedResult.query());
     assertNotNull(actualResult);
     assertEquals(expectedResult.query().toString(), actualResult.toString());
     assertEquals(GEO_FIELD, actualResult.geoShape().field());
