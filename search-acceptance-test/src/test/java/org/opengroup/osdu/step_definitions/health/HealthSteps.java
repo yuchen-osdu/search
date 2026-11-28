@@ -17,6 +17,8 @@
 
 package org.opengroup.osdu.step_definitions.health;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import io.cucumber.java.Before;
 import io.cucumber.java.Scenario;
 import io.cucumber.java.en.Given;
@@ -24,8 +26,6 @@ import io.cucumber.java.en.Then;
 import org.apache.hc.core5.http.HttpStatus;
 import org.opengroup.osdu.common.BaseSearchSteps;
 import org.opengroup.osdu.core.test.client.HttpResponse;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SuppressWarnings("unused")
 public class HealthSteps extends BaseSearchSteps {
@@ -39,13 +39,13 @@ public class HealthSteps extends BaseSearchSteps {
 
     @Given("I send get request to liveness check endpoint")
     public void i_send_get_request_to_liveness_endpoint() {
-        response = searchClient().livenessCheck(headers);
+        response = searchClient().livenessCheck();
         logResponse(response);
     }
 
     @Given("I send get request to readiness check endpoint")
     public void i_send_get_request_to_readiness_endpoint() {
-        response = searchClient().readinessCheck(headers);
+        response = searchClient().readinessCheck();
         logResponse(response);
     }
 

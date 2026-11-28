@@ -30,8 +30,9 @@ You need to set variables in **values.yaml** file using any code editor. Some of
 
 | Name | Description | Type | Default |Required |
 |------|-------------|------|---------|---------|
-**global.domain** | your domain for the external endpoint, ex `example.com` | string | - | yes
-**global.onPremEnabled** | whether on-prem is enabled | boolean | false | yes
+**global.domain** | your domain, ex `example.com`. Not used by the chart templates (the `VirtualService` that used it was removed). Use `global.hostname` for the route host | string | - | no
+**global.hostname** | host the `HTTPRoute` attaches to when `httpRoute.hostnames` is empty, ex `osdu.example.com` | string | `""` | only if `httpRoute.enabled` is true and `httpRoute.hostnames` is empty
+**global.onPremEnabled** | not used by the chart templates | boolean | false | no
 **global.limitsEnabled** | whether CPU and memory limits are enabled | boolean | true | yes
 
 ### rosa flag
@@ -46,7 +47,6 @@ You need to set variables in **values.yaml** file using any code editor. Some of
 |------|-------------|------|---------|----------|
 **data.logLevel** | logging level | string | `ERROR` | yes
 **data.entitlementsHost** | Entitlements service host | string | `http://entitlements` | yes
-**data.collaborationsEnabled** | Collaboration Context feature is enabled | boolean | true | no
 **data.indexerHost** | Indexer service host | string | `http://indexer` | yes
 **data.policyHost** | Policy service host | string | `http://policy` | yes
 **data.partitionHost** | Partition service host | string | `http://partition` | yes
@@ -77,6 +77,49 @@ You need to set variables in **values.yaml** file using any code editor. Some of
 **conf.elasticSecretName** | secret for elasticsearch | string | `search-elastic-secret` | yes
 **conf.searchRedisSecretName** | search Redis secret that contains redis password with REDIS_PASSWORD key | string | `search-redis-secret` | yes
 
+### Routing (HTTPRoute)
+
+The chart owns the routing for the service. It renders a Gateway API `HTTPRoute`, disabled by default. The chart no longer ships an Istio `VirtualService`.
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|----------|
+**httpRoute.enabled** | render the `HTTPRoute` | boolean | `false` | yes
+**httpRoute.name** | route name. When empty the name is `<release>-route`, which differs from any route of the same name defined outside this chart | string | `""` | no
+**httpRoute.parentRefs** | gateways the route attaches to | list | `cimpl-gateway` in `istio-system` | yes
+**httpRoute.hostnames** | hosts the route serves. When empty, `global.hostname` is used | list | `[]` | one of `httpRoute.hostnames` or `global.hostname`
+**httpRoute.routes** | one rule per entry, see below | list | `/api/search/` | yes
+
+The render fails when `httpRoute.enabled` is true and both `httpRoute.hostnames` and `global.hostname` are empty, so the route is never exposed on all hosts.
+
+Each entry of `httpRoute.routes` accepts:
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|----------|
+**path** | path to match | string | - | yes
+**pathType** | match type, `PathPrefix` or `Exact` | string | `PathPrefix` | no
+**serviceName** | backend Service name | string | `conf.appName` | no
+**port** | backend Service port | integer | `80` | no
+**filters** | Gateway API filters, for example `URLRewrite` | list | - | no
+
+Example, a route with a rewrite and another port:
+
+```yaml
+httpRoute:
+  enabled: true
+  hostnames:
+    - osdu.example.com
+  routes:
+    - path: /api/search/
+    - path: /other/
+      port: 9002
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+```
+
 ### Istio variables
 
 | Name | Description | Type | Default |Required |
@@ -92,6 +135,18 @@ Run this command from within this directory:
 
 ```console
 helm install core-plus-search-deploy .
+```
+
+To expose the service through the Gateway API:
+
+```console
+helm install core-plus-search-deploy . --set httpRoute.enabled=true --set global.hostname=osdu.example.com
+```
+
+To check the rendered route without installing:
+
+```console
+helm template core-plus-search-deploy . --set httpRoute.enabled=true --set global.hostname=osdu.example.com -s templates/httproute.yaml
 ```
 
 ## Uninstall the Helm chart

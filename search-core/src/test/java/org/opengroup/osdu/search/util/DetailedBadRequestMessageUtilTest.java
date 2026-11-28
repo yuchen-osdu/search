@@ -10,7 +10,8 @@ import co.elastic.clients.elasticsearch._types.ErrorResponse;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -31,7 +32,7 @@ public class DetailedBadRequestMessageUtilTest {
 
     private static final String NESTED_FAIL_REASON = "failed to create query: [nested] failed to find nested object under path [data.NameAliases]";
     private static final String GEO_FIELD_FAIL_REASON = "failed to find geo field [officeAddress]";
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new JsonMapper();
 
     private DetailedBadRequestMessageUtil badRequestMessageUtil;
 

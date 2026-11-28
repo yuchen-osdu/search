@@ -7,15 +7,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.security.PermitAll;
 import org.opengroup.osdu.core.common.model.http.AppError;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.annotation.security.PermitAll;
 
 @RestController
 @RequestMapping("/")
@@ -28,10 +25,7 @@ public class HealthCheckApi {
       tags = {"health-check-api"})
   @ApiResponses(
       value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "OK",
-            content = {@Content(mediaType = MediaType.TEXT_PLAIN_VALUE, schema = @Schema(implementation = String.class))}),
+        @ApiResponse(responseCode = "200", description = "OK"),
         @ApiResponse(
             responseCode = "502",
             description = "Bad Gateway",
@@ -46,8 +40,8 @@ public class HealthCheckApi {
   @SecurityRequirements
   @PermitAll
   @GetMapping("/liveness_check")
-  public ResponseEntity<String> livenessCheck() {
-    return new ResponseEntity<>("Search Service is alive", HttpStatus.OK);
+  public ResponseEntity<Void> livenessCheck() {
+    return ResponseEntity.ok().build();
   }
 
   @Operation(
@@ -56,10 +50,7 @@ public class HealthCheckApi {
       tags = {"health-check-api"})
   @ApiResponses(
       value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "OK",
-            content = {@Content(mediaType = MediaType.TEXT_PLAIN_VALUE, schema = @Schema(implementation = String.class))}),
+        @ApiResponse(responseCode = "200", description = "OK"),
         @ApiResponse(
             responseCode = "502",
             description = "Bad Gateway",
@@ -74,7 +65,7 @@ public class HealthCheckApi {
   @SecurityRequirements
   @PermitAll
   @GetMapping("/readiness_check")
-  public ResponseEntity<String> readinessCheck() {
-    return new ResponseEntity<>("Search Service is ready", HttpStatus.OK);
+  public ResponseEntity<Void> readinessCheck() {
+    return ResponseEntity.ok().build();
   }
 }

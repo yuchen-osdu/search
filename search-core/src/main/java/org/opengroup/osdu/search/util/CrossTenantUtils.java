@@ -14,7 +14,7 @@
 
 package org.opengroup.osdu.search.util;
 
-import com.google.api.client.util.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.opengroup.osdu.core.common.search.ElasticIndexNameResolver;
 import org.opengroup.osdu.core.common.model.search.Query;
 import org.opengroup.osdu.core.common.util.KindParser;
@@ -59,7 +59,7 @@ public class CrossTenantUtils {
         List<String> normalIndices = new ArrayList<>();
         for(String kind : kinds) {
             String index;
-            if (aliases.containsKey(kind) && !Strings.isNullOrEmpty(aliases.get(kind))) {
+            if (aliases.containsKey(kind) && !StringUtils.isEmpty(aliases.get(kind))) {
                 index = aliases.get(kind);
             } else {
                 index = this.elasticIndexNameResolver.getIndexNameFromKind(kind);

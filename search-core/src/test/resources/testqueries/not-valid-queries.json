@@ -1,4 +1,5 @@
 {
     "2 of closing brackets missing": "nested(data.NestedTest, (NumberTest:(12345.0 OR 0) AND StringTest:\"test string\"",
-    "Malformed closing parentheses in query part:": "nested(data.NestedTest, ))NumberTest:(12345.0 OR 0) AND StringTest:\"test string\"))"
+    "Malformed closing parentheses in query part:": "nested(data.NestedTest, ))NumberTest:(12345.0 OR 0) AND StringTest:\"test string\"))",
+    "Malformed nested query": "nested(data.NestedTest, nested(data.NestedTest.NestedInnerTest,))"
 }

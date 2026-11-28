@@ -24,7 +24,7 @@ public class SwaggerSteps extends BaseSearchSteps {
 
     @When("I send get request to swagger endpoint")
     public void i_send_get_request_to_swagger_endpoint() {
-        response = executeGetApiDocs(headers);
+        response = executeGetApiDocs();
     }
 
     @Then("I should get openapi spec in response")

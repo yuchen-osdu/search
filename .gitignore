@@ -41,6 +41,7 @@ hs_err_pid*
 
 target/
 bin/
+.flattened-pom.xml
 # Eclipse
 .classpath
 .project

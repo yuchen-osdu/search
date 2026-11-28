@@ -93,6 +93,7 @@ public class AuthorizationRequestFilterTest {
         dpsHeaders.put(DpsHeaders.AUTHORIZATION, "Bearer geer.fereferv.cefe=");
         dpsHeaders.put(DpsHeaders.CONTENT_TYPE, "application/json");
         dpsHeaders.addCorrelationIdIfMissing();
+        org.springframework.test.util.ReflectionTestUtils.setField(sut, "requestHeaders", dpsHeaders);
     	when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
         when(httpResponse.getStatus()).thenReturn(200);
 
@@ -129,7 +130,7 @@ public class AuthorizationRequestFilterTest {
 
         verify(this.resourceInfo, never()).getResourceMethod();
 
-        assertNotNull(httpResponse.containsHeader(DpsHeaders.CORRELATION_ID));
+        verify(httpResponse).addHeader(DpsHeaders.CORRELATION_ID, dpsHeaders.getCorrelationId());
         assertNotNull(dpsHeaders.getCorrelationId());
     }
 
@@ -153,7 +154,7 @@ public class AuthorizationRequestFilterTest {
 
         sut.doFilter(httpRequest, httpResponse, filterChain);
 
-        assertNotNull(httpResponse.containsHeader(DpsHeaders.CORRELATION_ID));
+        verify(httpResponse).addHeader(DpsHeaders.CORRELATION_ID, dpsHeaders.getCorrelationId());
         assertNotNull(dpsHeaders.getCorrelationId());
     }
 

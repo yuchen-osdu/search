@@ -30,7 +30,6 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.indices.GetFieldMappingRequest;
 import co.elastic.clients.elasticsearch.indices.GetFieldMappingResponse;
 import co.elastic.clients.elasticsearch.indices.get_field_mapping.TypeFieldMappings;
-import com.google.api.client.http.HttpMethods;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
@@ -182,7 +181,7 @@ public class AttributeCollection {
       headersInfo.put(DpsHeaders.AUTHORIZATION, this.checkOrGetAuthorizationHeader());
       FetchServiceHttpRequest request =
           FetchServiceHttpRequest.builder()
-              .httpMethod(HttpMethods.PUT)
+              .httpMethod("PUT")
               .url(searchConfigurationProperties.getIndexerHost() + endUrl)
               .headers(headersInfo)
               .body(body)

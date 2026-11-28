@@ -14,9 +14,11 @@
 
 package org.opengroup.osdu.search.util;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
 import org.elasticsearch.client.ResponseException;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -34,7 +36,7 @@ public class ResponseExceptionParser {
     @Autowired
     private JaxRsDpsLog log;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper objectMapper = new JsonMapper();
 
     public List<String> parseException(AppException e) {
         return parseException(e.getOriginalException());
@@ -56,7 +58,7 @@ public class ResponseExceptionParser {
                         .map(errorNode -> errorNode.get("root_cause"));
 
                 return getReason(rootCause);
-            } catch (IOException ioe) {
+            } catch (IOException | JacksonException ioe) {
                 this.log.error("Unable to parse response exception content", ioe);
             }
         }
